@@ -1,27 +1,51 @@
 /**
- * Quản lý âm thanh bằng Web Audio API thuần túy:
- * - Không lo thiếu file âm thanh hay lỗi 404
- * - Tạo giai điệu ngũ cung truyền thống êm dịu (Asian Pentatonic Chime / Zither melody)
- * - Tiếng dế đêm hè ru nhẹ
- * - Âm thanh chuông gió lung linh khi click tương tác hoặc thả đèn
+ * Quản lý âm thanh Tết Trung Thu sâu lắng bằng Web Audio API:
+ * - Giai điệu sáo trúc & đàn tranh ngũ cung trầm bổng, da diết (A minor / D minor)
+ * - Âm hưởng sâu lắng, tha thiết như điệu ru trăng rằm quê hương
+ * - Tự động phát khi chạm vào màn hình và ngân vang êm đềm
  */
 export class SoundManager {
   constructor() {
     this.isPlaying = false;
     this.ctx = null;
     this.melodyTimer = null;
-    this.cricketNode = null;
-    
-    // Thang âm ngũ cung Trung Thu (Pentatonic scale: C, D, E, G, A ở các quãng tám)
-    this.pentatonicFrequencies = [
-      261.63, 293.66, 329.63, 392.00, 440.00, // Quãng 4: C4, D4, E4, G4, A4
-      523.25, 587.33, 659.25, 783.99, 880.00, // Quãng 5: C5, D5, E5, G5, A5
-      1046.50                                  // Quãng 6: C6
+    this.droneOsc = null;
+
+    // Thang âm ngũ cung trữ tình sâu lắng (D minor pentatonic: D, F, G, A, C)
+    // Các tần số nốt trầm ấm và nốt bổng trong trẻo:
+    this.notes = {
+      D3: 146.83, F3: 174.61, G3: 196.00, A3: 220.00, C4: 261.63,
+      D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00,
+      C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, A5: 880.00
+    };
+
+    // Chuỗi giai điệu sâu lắng, tha thiết gợi nhớ bài "Thằng Cuội" & ánh trăng quê hương
+    this.melodySequence = [
+      { note: 'D4', dur: 1.8, pause: 1400 },
+      { note: 'F4', dur: 1.5, pause: 1200 },
+      { note: 'A4', dur: 2.5, pause: 1800 },
+      { note: 'G4', dur: 1.8, pause: 1300 },
+      { note: 'F4', dur: 1.5, pause: 1100 },
+      { note: 'D4', dur: 2.8, pause: 2000 },
+      
+      { note: 'F4', dur: 1.6, pause: 1200 },
+      { note: 'G4', dur: 1.6, pause: 1200 },
+      { note: 'A4', dur: 2.2, pause: 1600 },
+      { note: 'C5', dur: 2.8, pause: 2000 },
+      { note: 'D5', dur: 3.5, pause: 2600 },
+
+      { note: 'C5', dur: 1.8, pause: 1400 },
+      { note: 'A4', dur: 2.2, pause: 1600 },
+      { note: 'G4', dur: 1.8, pause: 1300 },
+      { note: 'F4', dur: 2.2, pause: 1600 },
+      { note: 'D4', dur: 3.8, pause: 2800 },
+
+      { note: 'A3', dur: 2.0, pause: 1500 },
+      { note: 'C4', dur: 2.0, pause: 1500 },
+      { note: 'D4', dur: 4.2, pause: 3200 }
     ];
 
-    // Giai điệu mượt mà du dương
-    this.melodyNotes = [0, 2, 4, 3, 5, 7, 6, 8, 7, 5, 4, 2, 3, 4, 5, 8];
-    this.melodyIndex = 0;
+    this.seqIndex = 0;
   }
 
   initContext() {
@@ -34,22 +58,12 @@ export class SoundManager {
     }
   }
 
-  toggleMusic() {
-    this.initContext();
-    if (this.isPlaying) {
-      this.stop();
-      return false;
-    } else {
-      this.start();
-      return true;
-    }
-  }
-
   start() {
+    this.initContext();
     if (this.isPlaying) return;
     this.isPlaying = true;
-    this.playAmbientNight();
-    this.scheduleNextNote();
+    this.startAmbientDrone();
+    this.playNextMelodyNote();
   }
 
   stop() {
@@ -61,102 +75,130 @@ export class SoundManager {
   }
 
   /**
-   * Phát nốt nhạc chuông ngân (Chime / Guzheng / Harp tone)
+   * Âm hưởng sáo trúc nỉ non sâu lắng (Flute tone with vibrato & breath)
    */
-  playChimeTone(freq, duration = 2.2, volume = 0.12) {
-    if (!this.ctx) return;
+  playFluteTone(freq, duration = 2.5, volume = 0.12) {
+    if (!this.ctx || !freq) return;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
     const now = this.ctx.currentTime;
 
+    // 1. Dao động chính (sóng sine ấm mượt)
+    const osc = this.ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
 
-    // Kèm thêm hòa âm bậc 2 tạo cảm giác chuông đồng ấm
-    const oscHarmonic = this.ctx.createOscillator();
-    const gainHarmonic = this.ctx.createGain();
-    oscHarmonic.type = 'triangle';
-    oscHarmonic.frequency.setValueAtTime(freq * 2, now);
+    // 2. Rung nhẹ nốt (Vibrato) tạo cảm giác sáo trúc tự nhiên
+    const vibrato = this.ctx.createOscillator();
+    const vibratoGain = this.ctx.createGain();
+    vibrato.frequency.setValueAtTime(4.8, now); // Rung 4.8 Hz
+    vibratoGain.gain.setValueAtTime(freq * 0.012, now); // Biên độ rung mềm
+    vibrato.connect(osc.frequency);
 
-    // Envelope âm lượng: chạm nhẹ rồi ngân dài
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(volume, now + 0.04);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    // 3. Hài âm bậc 2 giả lập ống trúc rỗng
+    const harm = this.ctx.createOscillator();
+    const harmGain = this.ctx.createGain();
+    harm.type = 'triangle';
+    harm.frequency.setValueAtTime(freq * 2, now);
 
-    gainHarmonic.gain.setValueAtTime(0, now);
-    gainHarmonic.gain.linearRampToValueAtTime(volume * 0.35, now + 0.02);
-    gainHarmonic.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.7);
+    // 4. Bộ lọc thông thấp làm ấm tiếng sáo
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1400, now);
 
-    osc.connect(gain);
-    oscHarmonic.connect(gainHarmonic);
-    gain.connect(this.ctx.destination);
-    gainHarmonic.connect(this.ctx.destination);
+    // 5. Envelope âm lượng mềm mại
+    const mainGain = this.ctx.createGain();
+    mainGain.gain.setValueAtTime(0, now);
+    mainGain.gain.linearRampToValueAtTime(volume, now + 0.18); // Nhập nhẹ nhàng
+    mainGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
+    harmGain.gain.setValueAtTime(0, now);
+    harmGain.gain.linearRampToValueAtTime(volume * 0.22, now + 0.15);
+    harmGain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.7);
+
+    // Kết nối mạng âm thanh
+    osc.connect(mainGain);
+    harm.connect(harmGain);
+    mainGain.connect(filter);
+    harmGain.connect(filter);
+    filter.connect(this.ctx.destination);
+
+    vibrato.start(now);
     osc.start(now);
-    oscHarmonic.start(now);
+    harm.start(now);
+
+    vibrato.stop(now + duration);
     osc.stop(now + duration);
-    oscHarmonic.stop(now + duration);
+    harm.stop(now + duration);
   }
 
   /**
-   * Vòng lặp giai điệu ngũ cung Trung thu
+   * Âm nền huyền ảo nâng đỡ giai điệu (Ethereal Night Drone)
    */
-  scheduleNextNote() {
+  startAmbientDrone() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const drone = this.ctx.createOscillator();
+    const droneGain = this.ctx.createGain();
+    const droneFilter = this.ctx.createBiquadFilter();
+
+    drone.type = 'sine';
+    drone.frequency.setValueAtTime(146.83, now); // Nốt Rê trầm ấm (D3)
+
+    droneFilter.type = 'lowpass';
+    droneFilter.frequency.setValueAtTime(250, now);
+
+    droneGain.gain.setValueAtTime(0, now);
+    droneGain.gain.linearRampToValueAtTime(0.035, now + 3);
+
+    drone.connect(droneFilter);
+    droneFilter.connect(droneGain);
+    droneGain.connect(this.ctx.destination);
+
+    drone.start(now);
+    this.droneOsc = drone;
+  }
+
+  /**
+   * Vòng lặp giai điệu Trung Thu sâu lắng
+   */
+  playNextMelodyNote() {
     if (!this.isPlaying) return;
 
-    const noteIdx = this.melodyNotes[this.melodyIndex];
-    const freq = this.pentatonicFrequencies[noteIdx % this.pentatonicFrequencies.length];
-    this.playChimeTone(freq, 2.8, 0.1);
+    const item = this.melodySequence[this.seqIndex];
+    const freq = this.notes[item.note];
 
-    this.melodyIndex = (this.melodyIndex + 1) % this.melodyNotes.length;
+    this.playFluteTone(freq, item.dur, 0.11);
 
-    // Khoảng cách nhịp ngẫu nhiên theo nhịp điệu thiền định
-    const delay = 900 + Math.random() * 600;
+    this.seqIndex = (this.seqIndex + 1) % this.melodySequence.length;
+
     this.melodyTimer = setTimeout(() => {
-      this.scheduleNextNote();
-    }, delay);
+      this.playNextMelodyNote();
+    }, item.pause);
   }
 
   /**
-   * Âm thanh tiếng dế đêm hè và gió hiu hiu
+   * Hiệu ứng âm thanh chuông ngân khi chạm lồng đèn hoặc thả đèn
    */
-  playAmbientNight() {
-    if (!this.ctx) return;
-    
-    // Thỉnh thoảng phát tiếng chuông gió ngẫu nhiên
-    const chimeRandom = () => {
-      if (!this.isPlaying) return;
-      if (Math.random() > 0.4) {
-        const randFreq = this.pentatonicFrequencies[5 + Math.floor(Math.random() * 5)];
-        this.playChimeTone(randFreq, 3.2, 0.06);
-      }
-      setTimeout(chimeRandom, 3000 + Math.random() * 4000);
-    };
-    chimeRandom();
-  }
-
-  /**
-   * Hiệu ứng âm thanh khi tương tác (click thỏ ngọc, lồng đèn hoặc thả đèn)
-   */
-  playInteractionSound(type = 'chime') {
+  playInteractionSound(type = 'wish') {
     this.initContext();
     if (!this.ctx) return;
 
-    if (type === 'wish') {
-      // Chùm âm thanh thăng hoa khi thả đèn trời
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      notes.forEach((freq, idx) => {
-        setTimeout(() => {
-          this.playChimeTone(freq, 2.5, 0.16);
-        }, idx * 160);
-      });
-    } else {
-      // Âm thanh chạm nhẹ vui nhộn
-      this.playChimeTone(783.99, 1.2, 0.14);
-      setTimeout(() => {
-        this.playChimeTone(1046.50, 1.5, 0.12);
-      }, 100);
-    }
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(type === 'wish' ? 587.33 : 440.00, now);
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.12, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 2.5);
   }
 }

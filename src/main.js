@@ -28,11 +28,9 @@ class MidAutumnApp {
   }
 
   initThree() {
-    // 1. Scene nền đen tuyền sâu thẳm
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000);
 
-    // 2. Camera góc nhìn mở rộng thoáng đãng
     this.camera = new THREE.PerspectiveCamera(
       42,
       window.innerWidth / window.innerHeight,
@@ -41,7 +39,6 @@ class MidAutumnApp {
     );
     this.camera.position.set(0, 16, 44);
 
-    // 3. Renderer tối ưu 60 FPS mượt mà
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
@@ -49,12 +46,10 @@ class MidAutumnApp {
       precision: 'mediump'
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    // Giới hạn pixel ratio ở 1.5 để máy yếu hoặc màn hình retina 3x-4x vẫn chạy siêu mượt 60fps
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
-    // 4. OrbitControls: Xoay 360 độ êm ái
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
@@ -72,19 +67,14 @@ class MidAutumnApp {
   }
 
   initSceneObjects() {
-    // 1. Ánh sáng nhẹ gọn
     this.lightsManager = new LightsManager(this.scene);
-
-    // 2. Bầu trời sao ánh nhẹ & Nền đất nâu đậm
     this.skyAndMoon = new SkyAndMoon(this.scene);
-
-    // 3. Cây Hoa Anh Đào khung gỗ thanh thoát
     this.sakuraTree = new SakuraTree(this.scene);
 
-    // 4. Động vật dưới gốc cây
+    // Chú Cuội thổi sáo, Thỏ Ngọc & Bàn trà bánh nướng
     this.animalsManager = new AnimalsManager(this.scene);
 
-    // 5. Đàn lồng đèn ước nguyện ánh lửa bập bùng (nằm xa cây và thoáng đãng)
+    // Đàn 15 lồng đèn mang 15 lời chúc ý nghĩa
     this.floatingLanterns = new FloatingLanternsManager(
       this.scene,
       (wishData) => {
@@ -92,7 +82,7 @@ class MidAutumnApp {
       }
     );
 
-    // 6. Cô Bé đứng dưới gốc cây
+    // Cô bé thả đèn
     this.littleGirl = new LittleGirl(
       this.scene,
       (handPos, wishText) => {
@@ -101,7 +91,6 @@ class MidAutumnApp {
       }
     );
 
-    // 7. Hệ thống hạt ánh lửa & cánh hoa anh đào rơi
     this.particlesManager = new ParticlesManager(this.scene);
   }
 
@@ -115,7 +104,6 @@ class MidAutumnApp {
     });
 
     window.addEventListener('pointerup', (event) => {
-      // Phân biệt thao tác vuốt xoay (di chuyển > 8px) với thao tác chạm click
       const dist = Math.hypot(event.clientX - pointerStartX, event.clientY - pointerStartY);
       if (dist > 8) return;
 
@@ -127,7 +115,7 @@ class MidAutumnApp {
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
-      // 1. Click vào Lồng Đèn Ước Nguyện (Chỉ raycast collider bounding sphere, chạy trong 0.01ms - 0 lag)
+      // 1. Click vào Lồng Đèn -> Mở 1 trong 15 lời chúc ý nghĩa (0.01ms - 0 lag)
       const lanternHits = this.raycaster.intersectObjects(this.floatingLanterns.interactiveLanterns, false);
       if (lanternHits.length > 0) {
         const hitData = lanternHits[0].object.userData;
@@ -138,27 +126,33 @@ class MidAutumnApp {
         }
       }
 
-      // 2. Click vào Cô Bé -> Thả đèn
+      // 2. Click vào Cô Bé -> Thả đèn trời
       const girlHits = this.raycaster.intersectObjects(this.littleGirl.interactiveObjects, false);
       if (girlHits.length > 0) {
-        this.littleGirl.releaseLanternFromHand('Cầu mong gia đình bình an, vạn sự viên mãn!');
+        this.littleGirl.releaseLanternFromHand();
         this.soundManager.playInteractionSound('wish');
         this.particlesManager.triggerBurst(girlHits[0].point);
         this.uiManager.showToast('🏮 Bé đã thắp sáng ngọn đèn ước nguyện bay lên trời!');
         return;
       }
 
-      // 3. Click vào Thỏ Ngọc
-      const animalHits = this.raycaster.intersectObjects(this.animalsManager.interactiveObjects, true);
-      if (animalHits.length > 0) {
-        let rootObj = animalHits[0].object;
-        while (rootObj.parent && !['JadeRabbit', 'BabyRabbit', 'Buffalo'].includes(rootObj.name)) {
-          rootObj = rootObj.parent;
+      // 3. Click vào Chú Cuội hoặc Thỏ Ngọc
+      const figureHits = this.raycaster.intersectObjects(this.animalsManager.interactiveObjects, false);
+      if (figureHits.length > 0) {
+        const hitData = figureHits[0].object.userData;
+        if (hitData?.isCuoi) {
+          this.soundManager.playInteractionSound('flute');
+          this.particlesManager.triggerBurst(figureHits[0].point);
+          this.uiManager.showToast('🎋 Chú Cuội đang thổi khúc sáo trúc thanh bình!');
+          return;
         }
-        this.animalsManager.triggerHop(rootObj);
-        this.soundManager.playInteractionSound('chime');
-        this.particlesManager.triggerBurst(animalHits[0].point);
-        return;
+        if (hitData?.isRabbit) {
+          this.animalsManager.triggerHop();
+          this.soundManager.playInteractionSound('wish');
+          this.particlesManager.triggerBurst(figureHits[0].point);
+          this.uiManager.showToast('🐰 Thỏ Ngọc nhảy múa mừng trăng rằm!');
+          return;
+        }
       }
 
       // 4. Click vào mặt đất: tạo chùm hoa lửa mini
@@ -190,7 +184,6 @@ class MidAutumnApp {
     if (this.floatingLanterns) this.floatingLanterns.update(time);
     if (this.particlesManager) this.particlesManager.update(time);
 
-    // Tự động xoay chậm nhẹ nhàng
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.25;
 
