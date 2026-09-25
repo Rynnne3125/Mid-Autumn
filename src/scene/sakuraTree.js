@@ -1,282 +1,389 @@
 import * as THREE from 'three';
 
 /**
- * Cây Hoa Anh Đào (Sakura Tree) rực rỡ ở trung tâm:
- * - Dáng cây uốn lượn tao nhã, kích thước thu nhỏ cân đối chính giữa màn hình
- * - Tán hoa anh đào màu hồng phấn tươi sáng, phát sáng nhẹ trong đêm (Emissive Glow)
- * - Hiệu ứng cánh hoa anh đào (Sakura Petals) rơi lả tả theo làn gió đêm
+ * Cây Hoa Anh Đào với khung cành gỗ tự nhiên và vô số bông hoa anh đào hồng nhạt đính trên cành:
+ * - Khung thân gỗ màu sáng tự nhiên (gỗ ấm, không bị tối)
+ * - Các cành lớn tỏa nhánh nhỏ và các nhánh mảnh vươn cao
+ * - Hơn 2.000 bông hoa anh đào hồng nhạt đính dày đặc trên các cành trên cùng
+ * - Cánh hoa anh đào rơi lả tả theo gió
  */
 export class SakuraTree {
   constructor(scene) {
     this.scene = scene;
     this.group = new THREE.Group();
     this.lanternAnchors = [];
-    this.blossomClusters = [];
+    this.branchTipPositions = [];
 
     this.createMaterials();
-    this.buildTrunkAndBranches();
-    this.buildBlossomCanopy();
+    this.buildWoodArmature();
+    this.populateBlossomFlowers();
     this.createFallingPetals();
 
     this.scene.add(this.group);
   }
 
   createMaterials() {
-    // Vỏ thân cây anh đào: nâu sẫm ánh tím huyền ảo
-    this.barkMat = new THREE.MeshStandardMaterial({
-      color: 0x24151b,
-      roughness: 0.85,
-      metalness: 0.1,
-      flatShading: true
-    });
-
-    // Các tầng màu hoa anh đào rực rỡ, phát sáng dịu
-    this.sakuraHotPinkMat = new THREE.MeshStandardMaterial({
-      color: 0xff4d6d,
-      emissive: 0xd90429,
-      emissiveIntensity: 0.35,
-      roughness: 0.6,
-      metalness: 0.1,
-      flatShading: true
-    });
-
-    this.sakuraVibrantPinkMat = new THREE.MeshStandardMaterial({
-      color: 0xff758f,
-      emissive: 0xff4d6d,
-      emissiveIntensity: 0.3,
-      roughness: 0.65,
-      metalness: 0.1,
-      flatShading: true
-    });
-
-    this.sakuraSoftPinkMat = new THREE.MeshStandardMaterial({
-      color: 0xffb3c1,
-      emissive: 0xff758f,
-      emissiveIntensity: 0.25,
+    // Vỏ gỗ sáng màu, ấm áp tự nhiên (nâu mật ong sáng, không bị đen/tối)
+    this.woodMat = new THREE.MeshStandardMaterial({
+      color: 0x9c6644,
       roughness: 0.7,
-      metalness: 0.1,
-      flatShading: true
-    });
-
-    this.sakuraWhitePinkMat = new THREE.MeshStandardMaterial({
-      color: 0xfff0f3,
-      emissive: 0xffccd5,
-      emissiveIntensity: 0.2,
-      roughness: 0.75,
       metalness: 0.05,
       flatShading: true
     });
+
+    // Chất liệu hoa anh đào màu hồng phấn dịu dàng
+    this.blossomPetalMat = new THREE.MeshStandardMaterial({
+      color: 0xffb3c1,
+      emissive: 0xff758f,
+      emissiveIntensity: 0.35,
+      roughness: 0.5,
+      side: THREE.DoubleSide
+    });
+
+    // Nhụy hoa vàng óng
+    this.stamenMat = new THREE.MeshBasicMaterial({
+      color: 0xffea00
+    });
   }
 
-  buildTrunkAndBranches() {
-    // Thân cây uốn lượn mềm mại dáng bonsai nghệ thuật
+  /**
+   * Dựng khung cây gỗ (Thân chính -> Cành lớn -> Nhánh phụ vươn cao)
+   */
+  buildWoodArmature() {
+    // 1. Thân chính uốn cong thanh thoát từ gốc
     const trunkCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, -0.2, 0),
-      new THREE.Vector3(0.6, 2.2, 0.3),
-      new THREE.Vector3(0.2, 4.5, -0.2),
-      new THREE.Vector3(-0.4, 6.8, 0.1),
-      new THREE.Vector3(0, 8.5, 0)
+      new THREE.Vector3(0.4, 2.2, 0.2),
+      new THREE.Vector3(-0.2, 4.4, -0.1),
+      new THREE.Vector3(0.3, 6.4, 0.3),
+      new THREE.Vector3(0, 8.0, 0)
     ]);
 
-    const trunkGeo = new THREE.TubeGeometry(trunkCurve, 20, 1.4, 12, false);
+    const trunkGeo = new THREE.TubeGeometry(trunkCurve, 20, 1.2, 10, false);
     
-    // Tinh chỉnh thon gọn từ gốc lên ngọn
+    // Tinh chỉnh thân thuôn dần lên ngọn
     const pos = trunkGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i);
-      const factor = 1 - y / 10;
+      const factor = 1 - y / 9;
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const scale = Math.max(0.45, 0.55 + factor * 0.9);
+      const scale = Math.max(0.4, 0.5 + factor * 0.75);
       pos.setX(i, x * scale);
       pos.setZ(i, z * scale);
     }
     trunkGeo.computeVertexNormals();
 
-    const trunkMesh = new THREE.Mesh(trunkGeo, this.barkMat);
+    const trunkMesh = new THREE.Mesh(trunkGeo, this.woodMat);
     trunkMesh.castShadow = true;
     trunkMesh.receiveShadow = true;
     this.group.add(trunkMesh);
 
-    // Rễ cây xòe nhẹ ôm mặt đất
-    const rootAngles = [0, 1.3, 2.6, 3.9, 5.2];
+    // Rễ cây gỗ ôm đồi cỏ
+    const rootAngles = [0.2, 1.5, 2.8, 4.1, 5.4];
     rootAngles.forEach(ang => {
       const rootCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(Math.cos(ang) * 0.8, 0.9, Math.sin(ang) * 0.8),
-        new THREE.Vector3(Math.cos(ang) * 1.8, 0.2, Math.sin(ang) * 1.8),
-        new THREE.Vector3(Math.cos(ang) * 2.8, -0.1, Math.sin(ang) * 2.8)
+        new THREE.Vector3(Math.cos(ang) * 0.7, 0.8, Math.sin(ang) * 0.7),
+        new THREE.Vector3(Math.cos(ang) * 1.6, 0.2, Math.sin(ang) * 1.6),
+        new THREE.Vector3(Math.cos(ang) * 2.5, -0.1, Math.sin(ang) * 2.5)
       ]);
-      const rootGeo = new THREE.TubeGeometry(rootCurve, 8, 0.35, 6, false);
-      const rootMesh = new THREE.Mesh(rootGeo, this.barkMat);
-      rootMesh.castShadow = true;
-      this.group.add(rootMesh);
+      const rootGeo = new THREE.TubeGeometry(rootCurve, 8, 0.3, 6, false);
+      this.group.add(new THREE.Mesh(rootGeo, this.woodMat));
     });
 
-    // Các nhánh cành chính vươn ra các hướng
+    // 2. Hệ thống cành lớn vươn rộng và nhánh phụ
     const branchConfigs = [
+      // Nhánh vươn trái
       {
-        curve: [
-          new THREE.Vector3(0, 7.5, 0),
-          new THREE.Vector3(-2.8, 9.0, 1.8),
-          new THREE.Vector3(-5.5, 9.8, 2.8),
-          new THREE.Vector3(-7.5, 9.2, 3.5)
+        main: [
+          new THREE.Vector3(0, 7.2, 0),
+          new THREE.Vector3(-2.2, 8.5, 1.4),
+          new THREE.Vector3(-4.8, 9.4, 2.2),
+          new THREE.Vector3(-7.2, 9.2, 2.8)
         ],
-        radius: 0.65,
-        anchor: new THREE.Vector3(-5.2, 8.6, 2.6)
+        subBranches: [
+          [new THREE.Vector3(-4.8, 9.4, 2.2), new THREE.Vector3(-6.2, 10.8, 1.5), new THREE.Vector3(-7.8, 11.8, 1.8)],
+          [new THREE.Vector3(-2.2, 8.5, 1.4), new THREE.Vector3(-3.2, 10.2, -0.5), new THREE.Vector3(-4.5, 11.5, -1.0)]
+        ],
+        anchor: new THREE.Vector3(-5.5, 8.8, 2.2)
       },
+      // Nhánh vươn phải
       {
-        curve: [
+        main: [
+          new THREE.Vector3(0, 7.4, 0),
+          new THREE.Vector3(2.5, 8.6, 1.2),
+          new THREE.Vector3(5.2, 9.6, 1.8),
+          new THREE.Vector3(7.5, 9.4, 2.2)
+        ],
+        subBranches: [
+          [new THREE.Vector3(5.2, 9.6, 1.8), new THREE.Vector3(6.8, 11.2, 1.2), new THREE.Vector3(8.4, 12.0, 1.5)],
+          [new THREE.Vector3(2.5, 8.6, 1.2), new THREE.Vector3(3.8, 10.4, -0.6), new THREE.Vector3(5.2, 11.6, -1.2)]
+        ],
+        anchor: new THREE.Vector3(5.8, 9.0, 1.8)
+      },
+      // Nhánh vươn sau lưng
+      {
+        main: [
+          new THREE.Vector3(0, 7.6, 0),
+          new THREE.Vector3(0.8, 9.0, -2.5),
+          new THREE.Vector3(1.6, 10.0, -5.2),
+          new THREE.Vector3(2.2, 9.8, -7.5)
+        ],
+        subBranches: [
+          [new THREE.Vector3(1.6, 10.0, -5.2), new THREE.Vector3(2.8, 11.5, -6.5), new THREE.Vector3(3.5, 12.5, -8.0)],
+          [new THREE.Vector3(0.8, 9.0, -2.5), new THREE.Vector3(-1.0, 10.5, -4.5), new THREE.Vector3(-2.2, 11.8, -6.2)]
+        ],
+        anchor: new THREE.Vector3(1.8, 9.2, -5.5)
+      },
+      // Nhánh vươn sau trái
+      {
+        main: [
           new THREE.Vector3(0, 7.8, 0),
-          new THREE.Vector3(3.2, 9.2, 1.5),
-          new THREE.Vector3(6.2, 10.0, 2.2),
-          new THREE.Vector3(8.5, 9.5, 2.5)
+          new THREE.Vector3(-1.8, 9.2, -1.8),
+          new THREE.Vector3(-3.8, 10.2, -3.8),
+          new THREE.Vector3(-5.8, 10.0, -5.5)
         ],
-        radius: 0.65,
-        anchor: new THREE.Vector3(5.8, 8.8, 2.0)
-      },
-      {
-        curve: [
-          new THREE.Vector3(0, 8.2, 0),
-          new THREE.Vector3(1.0, 9.8, -3.2),
-          new THREE.Vector3(2.2, 10.5, -6.0),
-          new THREE.Vector3(2.8, 10.0, -8.2)
+        subBranches: [
+          [new THREE.Vector3(-3.8, 10.2, -3.8), new THREE.Vector3(-5.0, 11.8, -4.2), new THREE.Vector3(-6.5, 12.8, -4.8)]
         ],
-        radius: 0.6,
-        anchor: new THREE.Vector3(2.0, 9.2, -5.2)
-      },
-      {
-        curve: [
-          new THREE.Vector3(0, 8.3, 0),
-          new THREE.Vector3(-2.2, 10.0, -2.5),
-          new THREE.Vector3(-4.5, 10.8, -4.8),
-          new THREE.Vector3(-6.5, 10.2, -6.5)
-        ],
-        radius: 0.55,
         anchor: new THREE.Vector3(-4.2, 9.4, -4.0)
       },
+      // Nhánh đỉnh vươn thẳng lên trời
       {
-        curve: [
-          new THREE.Vector3(0, 8.5, 0),
-          new THREE.Vector3(0.4, 10.8, 1.5),
-          new THREE.Vector3(0.8, 12.5, 2.2),
-          new THREE.Vector3(1.2, 13.8, 2.5)
+        main: [
+          new THREE.Vector3(0, 8.0, 0),
+          new THREE.Vector3(0.3, 10.2, 0.8),
+          new THREE.Vector3(0.6, 12.2, 1.2),
+          new THREE.Vector3(0.9, 14.0, 1.5)
         ],
-        radius: 0.5,
-        anchor: new THREE.Vector3(0.6, 11.2, 1.8)
+        subBranches: [
+          [new THREE.Vector3(0.6, 12.2, 1.2), new THREE.Vector3(-1.2, 13.5, 1.0), new THREE.Vector3(-2.2, 14.8, 0.8)],
+          [new THREE.Vector3(0.6, 12.2, 1.2), new THREE.Vector3(1.8, 13.8, 0.6), new THREE.Vector3(2.8, 15.0, 0.4)],
+          [new THREE.Vector3(0.3, 10.2, 0.8), new THREE.Vector3(0.2, 12.0, -1.2), new THREE.Vector3(0.4, 13.8, -2.0)]
+        ],
+        anchor: new THREE.Vector3(0.6, 11.5, 1.2)
       }
     ];
 
     branchConfigs.forEach(cfg => {
-      const curve = new THREE.CatmullRomCurve3(cfg.curve);
-      const branchGeo = new THREE.TubeGeometry(curve, 14, cfg.radius, 8, false);
-      const branchMesh = new THREE.Mesh(branchGeo, this.barkMat);
-      branchMesh.castShadow = true;
-      this.group.add(branchMesh);
+      // Dựng cành chính
+      const curve = new THREE.CatmullRomCurve3(cfg.main);
+      const branchGeo = new THREE.TubeGeometry(curve, 14, 0.55, 8, false);
+      this.group.add(new THREE.Mesh(branchGeo, this.woodMat));
 
-      if (cfg.anchor) {
-        this.lanternAnchors.push(cfg.anchor);
+      if (cfg.anchor) this.lanternAnchors.push(cfg.anchor);
+
+      // Lưu lại các điểm dọc theo cành để gắn hoa
+      const points = curve.getPoints(12);
+      for (let p = 3; p < points.length; p++) {
+        this.branchTipPositions.push(points[p]);
       }
-    });
-  }
 
-  buildBlossomCanopy() {
-    // Tán hoa anh đào nhiều tầng bồng bềnh rực rỡ sắc hồng
-    const blossomPositions = [
-      // Đỉnh cây
-      { pos: new THREE.Vector3(0.8, 14.0, 2.2), radius: 3.5, mat: this.sakuraWhitePinkMat },
-      { pos: new THREE.Vector3(-1.2, 13.2, -0.5), radius: 3.2, mat: this.sakuraSoftPinkMat },
-      { pos: new THREE.Vector3(1.8, 13.5, -1.5), radius: 3.0, mat: this.sakuraVibrantPinkMat },
-      // Nhánh trái
-      { pos: new THREE.Vector3(-5.2, 10.5, 3.0), radius: 3.6, mat: this.sakuraVibrantPinkMat },
-      { pos: new THREE.Vector3(-7.5, 9.8, 3.5), radius: 2.8, mat: this.sakuraHotPinkMat },
-      { pos: new THREE.Vector3(-4.0, 11.8, 1.8), radius: 2.9, mat: this.sakuraSoftPinkMat },
-      // Nhánh phải
-      { pos: new THREE.Vector3(6.0, 10.8, 2.2), radius: 3.5, mat: this.sakuraHotPinkMat },
-      { pos: new THREE.Vector3(8.5, 10.0, 2.5), radius: 2.8, mat: this.sakuraVibrantPinkMat },
-      { pos: new THREE.Vector3(4.5, 12.0, 1.0), radius: 3.0, mat: this.sakuraSoftPinkMat },
-      // Nhánh sau
-      { pos: new THREE.Vector3(2.2, 11.2, -6.0), radius: 3.4, mat: this.sakuraSoftPinkMat },
-      { pos: new THREE.Vector3(2.8, 10.5, -8.5), radius: 2.6, mat: this.sakuraHotPinkMat },
-      { pos: new THREE.Vector3(-4.5, 11.5, -4.8), radius: 3.2, mat: this.sakuraWhitePinkMat },
-      { pos: new THREE.Vector3(-6.5, 10.8, -6.8), radius: 2.7, mat: this.sakuraVibrantPinkMat },
-      // Điểm xuyết viền trước
-      { pos: new THREE.Vector3(0, 10.2, 4.2), radius: 2.6, mat: this.sakuraVibrantPinkMat },
-      { pos: new THREE.Vector3(-2.5, 9.2, 5.0), radius: 2.2, mat: this.sakuraHotPinkMat }
-    ];
+      // Dựng các nhánh phụ
+      if (cfg.subBranches) {
+        cfg.subBranches.forEach(sub => {
+          const subCurve = new THREE.CatmullRomCurve3(sub);
+          const subGeo = new THREE.TubeGeometry(subCurve, 10, 0.3, 6, false);
+          this.group.add(new THREE.Mesh(subGeo, this.woodMat));
 
-    blossomPositions.forEach(item => {
-      const geo = new THREE.DodecahedronGeometry(item.radius, 1);
-      const pos = geo.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const vx = pos.getX(i);
-        const vy = pos.getY(i);
-        const vz = pos.getZ(i);
-        const noise = 1 + (Math.sin(vx * 2.0) + Math.cos(vy * 2.2) + Math.sin(vz * 1.8)) * 0.15;
-        pos.setXYZ(i, vx * noise, vy * noise * 0.82, vz * noise);
+          const subPts = subCurve.getPoints(10);
+          for (let sp = 2; sp < subPts.length; sp++) {
+            this.branchTipPositions.push(subPts[sp]);
+          }
+        });
       }
-      geo.computeVertexNormals();
-
-      const mesh = new THREE.Mesh(geo, item.mat);
-      mesh.position.copy(item.pos);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.group.add(mesh);
-
-      this.blossomClusters.push({
-        mesh,
-        baseScale: 1,
-        seed: Math.random() * 20
-      });
     });
   }
 
   /**
-   * Tạo hiệu ứng cánh hoa anh đào rơi lả tả theo gió (Falling Petals)
+   * Tạo hình 1 bông hoa anh đào 5 cánh tinh xảo với nhụy hoa
+   */
+  createBlossomFlowerGeometry() {
+    const flowerGroup = new THREE.Group();
+    const petalShape = new THREE.Shape();
+
+    // Cánh hoa hình trái tim / giọt lệ đặc trưng của hoa anh đào
+    petalShape.moveTo(0, 0);
+    petalShape.bezierCurveTo(0.18, 0.15, 0.22, 0.45, 0.08, 0.6);
+    petalShape.bezierCurveTo(0.04, 0.65, -0.04, 0.65, -0.08, 0.6);
+    petalShape.bezierCurveTo(-0.22, 0.45, -0.18, 0.15, 0, 0);
+
+    const petalGeo = new THREE.ShapeGeometry(petalShape);
+
+    // 5 cánh hoa xếp đối xứng tròn
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5;
+      const petalMesh = new THREE.Mesh(petalGeo, this.blossomPetalMat);
+      petalMesh.rotation.z = angle;
+      // Khẽ cong hình lòng chảo
+      petalMesh.rotation.x = 0.2;
+      flowerGroup.add(petalMesh);
+    }
+
+    // Nhụy hoa vàng ở giữa
+    const stamenGeo = new THREE.SphereGeometry(0.09, 6, 6);
+    const stamenMesh = new THREE.Mesh(stamenGeo, this.stamenMat);
+    stamenMesh.position.z = 0.04;
+    flowerGroup.add(stamenMesh);
+
+    return flowerGroup;
+  }
+
+  /**
+   * Tạo hơn 2.000 bông hoa anh đào hồng nhạt đính dày đặc trên các cành gỗ
+   */
+  populateBlossomFlowers() {
+    this.blossomsGroup = new THREE.Group();
+    const totalFlowers = 2200;
+
+    // Tạo hình mẫu bông hoa 5 cánh
+    const flowerSample = this.createBlossomFlowerGeometry();
+
+    // Dùng InstancedMesh để đạt hiệu năng tối đa (60 FPS mượt mà)
+    // Gom geometry cánh hoa 5 cánh lại
+    const singlePetalShape = new THREE.Shape();
+    singlePetalShape.moveTo(0, 0);
+    singlePetalShape.bezierCurveTo(0.18, 0.15, 0.22, 0.45, 0.08, 0.6);
+    singlePetalShape.bezierCurveTo(0.04, 0.65, -0.04, 0.65, -0.08, 0.6);
+    singlePetalShape.bezierCurveTo(-0.22, 0.45, -0.18, 0.15, 0, 0);
+
+    // Ghép 5 cánh thành 1 mesh bông hoa hoàn chỉnh
+    const flowerGeometries = [];
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5;
+      const g = new THREE.ShapeGeometry(singlePetalShape);
+      g.rotateZ(angle);
+      g.rotateX(0.2);
+      flowerGeometries.push(g);
+    }
+
+    // Nhụy hoa
+    const coreGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    coreGeo.translate(0, 0, 0.04);
+    flowerGeometries.push(coreGeo);
+
+    // Hợp nhất thành 1 geometry bông hoa duy nhất
+    import('three/addons/utils/BufferGeometryUtils.js').then((BufferGeometryUtils) => {
+      const mergedFlowerGeo = BufferGeometryUtils.mergeGeometries(flowerGeometries, false);
+
+      const instancedMesh = new THREE.InstancedMesh(mergedFlowerGeo, this.blossomPetalMat, totalFlowers);
+      instancedMesh.castShadow = true;
+      const dummy = new THREE.Object3D();
+
+      const palette = [
+        new THREE.Color(0xffb3c1), // Hồng phấn nhạt
+        new THREE.Color(0xffccd5), // Hồng kem dịu
+        new THREE.Color(0xfff0f3), // Trắng ánh hồng
+        new THREE.Color(0xff8fa3)  // Hồng đào tươi
+      ];
+
+      for (let i = 0; i < totalFlowers; i++) {
+        // Chọn ngẫu nhiên một điểm cành để đính chùm hoa
+        const anchorPt = this.branchTipPositions[i % this.branchTipPositions.length];
+        
+        // Phân tán hoa quanh cành theo hình cầu/elip tự nhiên
+        const radius = 0.2 + Math.random() * 1.5;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+
+        const posX = anchorPt.x + radius * Math.sin(phi) * Math.cos(theta);
+        const posY = anchorPt.y + radius * Math.cos(phi) * 0.9;
+        const posZ = anchorPt.z + radius * Math.sin(phi) * Math.sin(theta);
+
+        dummy.position.set(posX, posY, posZ);
+
+        // Hướng hoa xòe tự nhiên ra ngoài
+        dummy.rotation.set(
+          Math.random() * Math.PI * 2,
+          Math.random() * Math.PI * 2,
+          Math.random() * Math.PI * 2
+        );
+
+        // Kích thước hoa đa dạng
+        const scale = 0.75 + Math.random() * 0.55;
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+
+        // Màu sắc hồng nhạt đan xen
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        instancedMesh.setColorAt(i, color);
+      }
+
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
+
+      this.blossomInstanced = instancedMesh;
+      this.group.add(instancedMesh);
+    }).catch(() => {
+      // Fallback nếu không load được BufferGeometryUtils: dùng các chùm hoa tinh gọn
+      this.fallbackBlossoms(totalFlowers);
+    });
+  }
+
+  fallbackBlossoms(totalFlowers) {
+    const blossomGroup = new THREE.Group();
+    const flowerGeo = new THREE.DodecahedronGeometry(0.35, 1);
+    const count = Math.min(totalFlowers, 600);
+
+    for (let i = 0; i < count; i++) {
+      const mesh = new THREE.Mesh(flowerGeo, this.blossomPetalMat);
+      const anchorPt = this.branchTipPositions[i % this.branchTipPositions.length];
+      const r = 0.2 + Math.random() * 1.3;
+      mesh.position.set(
+        anchorPt.x + (Math.random() - 0.5) * r * 2,
+        anchorPt.y + (Math.random() - 0.5) * r * 1.5,
+        anchorPt.z + (Math.random() - 0.5) * r * 2
+      );
+      mesh.scale.setScalar(0.7 + Math.random() * 0.6);
+      blossomGroup.add(mesh);
+    }
+    this.group.add(blossomGroup);
+  }
+
+  /**
+   * Cánh hoa anh đào màu hồng phấn nhẹ nhàng rơi lả tả
    */
   createFallingPetals() {
-    this.petalCount = 350;
+    this.petalCount = 380;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(this.petalCount * 3);
     const colors = new Float32Array(this.petalCount * 3);
-    const scales = new Float32Array(this.petalCount);
     this.petalData = [];
 
-    const colHot = new THREE.Color(0xff4d6d);
-    const colSoft = new THREE.Color(0xff758f);
-    const colWhite = new THREE.Color(0xffb3c1);
+    const colSoftPink = new THREE.Color(0xffb3c1);
+    const colWhitePink = new THREE.Color(0xfff0f3);
 
-    // Texture cánh hoa anh đào hình giọt lệ
+    // Canvas texture cánh hoa hình giọt lệ
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.moveTo(32, 10);
-    ctx.bezierCurveTo(48, 20, 52, 45, 32, 58);
-    ctx.bezierCurveTo(12, 45, 16, 20, 32, 10);
+    ctx.moveTo(32, 8);
+    ctx.bezierCurveTo(50, 18, 54, 46, 32, 58);
+    ctx.bezierCurveTo(10, 46, 14, 18, 32, 8);
     ctx.fill();
     const petalTex = new THREE.CanvasTexture(canvas);
 
     for (let i = 0; i < this.petalCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 20;
+      positions[i * 3] = (Math.random() - 0.5) * 18;
       positions[i * 3 + 1] = 0.5 + Math.random() * 16;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 18;
 
-      const r = Math.random();
-      const col = r > 0.6 ? colHot : r > 0.25 ? colSoft : colWhite;
+      const col = Math.random() > 0.5 ? colSoftPink : colWhitePink;
       colors[i * 3] = col.r;
       colors[i * 3 + 1] = col.g;
       colors[i * 3 + 2] = col.b;
 
-      scales[i] = 0.35 + Math.random() * 0.45;
-
       this.petalData.push({
-        fallSpeed: 0.025 + Math.random() * 0.03,
-        driftSpeedX: (Math.random() - 0.5) * 0.015,
-        driftSpeedZ: (Math.random() - 0.5) * 0.015,
+        fallSpeed: 0.02 + Math.random() * 0.025,
+        driftSpeedX: (Math.random() - 0.5) * 0.012,
+        driftSpeedZ: (Math.random() - 0.5) * 0.012,
         swaySpeed: 1.2 + Math.random() * 1.5,
-        swayAmp: 0.03 + Math.random() * 0.02,
+        swayAmp: 0.025 + Math.random() * 0.02,
         offset: Math.random() * Math.PI * 2
       });
     }
@@ -285,10 +392,10 @@ export class SakuraTree {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 0.55,
+      size: 0.5,
       map: petalTex,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.92,
       vertexColors: true,
       depthWrite: false,
       blending: THREE.NormalBlending
@@ -299,15 +406,7 @@ export class SakuraTree {
   }
 
   update(time) {
-    // 1. Tán hoa anh đào khẽ rung rinh trong gió đêm
-    for (let i = 0; i < this.blossomClusters.length; i++) {
-      const c = this.blossomClusters[i];
-      const sway = Math.sin(time * 1.5 + c.seed) * 0.03;
-      c.mesh.rotation.z = sway;
-      c.mesh.rotation.y = Math.cos(time * 1.2 + c.seed) * 0.02;
-    }
-
-    // 2. Cánh hoa anh đào rơi xoay lơ lửng
+    // Cánh hoa rơi chầm chậm theo làn gió
     if (this.petalsMesh) {
       const pos = this.petalsMesh.geometry.attributes.position;
       for (let i = 0; i < this.petalCount; i++) {
@@ -316,9 +415,8 @@ export class SakuraTree {
         let x = pos.getX(i) + Math.sin(time * d.swaySpeed + d.offset) * d.swayAmp + d.driftSpeedX;
         let z = pos.getZ(i) + Math.cos(time * d.swaySpeed + d.offset) * d.swayAmp + d.driftSpeedZ;
 
-        // Khi rơi chạm đất, hồi sinh trên đỉnh tán cây
         if (y < 0.2) {
-          y = 12 + Math.random() * 5;
+          y = 13 + Math.random() * 4;
           x = (Math.random() - 0.5) * 16;
           z = (Math.random() - 0.5) * 16;
         }

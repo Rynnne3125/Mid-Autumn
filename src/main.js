@@ -18,11 +18,11 @@ class MidAutumnApp {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    // 3 góc máy được tinh chỉnh: Cây nằm chính giữa màn hình, bối cảnh mở rộng thoáng đãng
+    // 3 góc máy được tinh chỉnh: Cây nằm chính giữa màn hình, bối cảnh bầu trời sao mở rộng
     this.cameraPresets = [
-      { name: 'Toàn Cảnh Cây Hoa Anh Đào & Vầng Trăng', pos: new THREE.Vector3(0, 14, 38), target: new THREE.Vector3(0, 6.5, 0) },
+      { name: 'Toàn Cảnh Cây Hoa Anh Đào & Bầu Trời Sao', pos: new THREE.Vector3(0, 13, 38), target: new THREE.Vector3(0, 6.5, 0) },
       { name: 'Cận Cảnh Bé Thả Đèn & Thỏ Ngọc', pos: new THREE.Vector3(1.2, 3.6, 10.5), target: new THREE.Vector3(0.4, 2.0, 3.5) },
-      { name: 'Góc Ngước Ngắm Trăng & Tán Hoa Rực Rỡ', pos: new THREE.Vector3(2.5, 2.5, 9.0), target: new THREE.Vector3(12, 22, -18) }
+      { name: 'Góc Ngước Ngắm Bầu Trời Sao & Đèn Trời', pos: new THREE.Vector3(2.5, 2.5, 9.0), target: new THREE.Vector3(8, 20, -15) }
     ];
     this.currentPresetIndex = 0;
 
@@ -36,12 +36,12 @@ class MidAutumnApp {
   }
 
   initThree() {
-    // 1. Scene đêm sâu thẳm
+    // 1. Scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x02040b);
-    this.scene.fog = new THREE.FogExp2(0x02040b, 0.01);
+    this.scene.background = new THREE.Color(0x03071e);
+    this.scene.fog = new THREE.FogExp2(0x03071e, 0.008);
 
-    // 2. Camera: Góc nhìn mở rộng (FOV 42°) để bối cảnh rộng lớn và cây hoa anh đào vừa vặn trung tâm
+    // 2. Camera: Góc nhìn mở rộng (FOV 42°) để bối cảnh bầu trời sao rộng lớn và cây hoa anh đào vừa vặn trung tâm
     this.camera = new THREE.PerspectiveCamera(
       42,
       window.innerWidth / window.innerHeight,
@@ -61,12 +61,12 @@ class MidAutumnApp {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.25;
+    this.renderer.toneMappingExposure = 1.3;
 
     // 4. OrbitControls: Tinh chỉnh vuốt chạm mượt mà
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.08; // Độ trượt êm ái
+    this.controls.dampingFactor = 0.08;
     this.controls.rotateSpeed = 0.75;
     this.controls.zoomSpeed = 0.85;
     this.controls.maxPolarAngle = Math.PI / 2 - 0.01;
@@ -81,36 +81,33 @@ class MidAutumnApp {
     this.uiManager = new UIManager(
       this.soundManager,
       (wish) => {
-        // Thả đèn trời từ vị trí cô bé
         if (this.littleGirl) {
           this.littleGirl.releaseLanternFromHand(wish);
         }
       },
       () => {
-        // Chuyển góc nhìn camera
         return this.switchCameraPreset();
       },
       (wish) => {
-        // Kích hoạt cô bé thả đèn
         if (this.littleGirl) {
           this.littleGirl.releaseLanternFromHand(wish);
           this.soundManager.playInteractionSound('wish');
-          this.uiManager.showToast('🏮 Chiếc đèn lồng trên tay cô bé đang bay lên cung trăng rằm!');
+          this.uiManager.showToast('🏮 Chiếc đèn trời ước nguyện đang bay lên bầu trời sao!');
         }
       }
     );
   }
 
   initSceneObjects() {
-    // 1. Hệ thống chiếu sáng tương phản cao
+    // 1. Hệ thống chiếu sáng làm sáng vùng dưới gốc cây và đồi cỏ xanh
     this.lightsManager = new LightsManager(this.scene);
     this.uiManager.updateProgress(20);
 
-    // 2. Bầu trời đêm sâu thẳm, vầng trăng rằm & hòn đảo thần tiên
+    // 2. Bầu trời ngàn sao 360 độ & Đồi cỏ xanh tươi
     this.skyAndMoon = new SkyAndMoon(this.scene);
     this.uiManager.updateProgress(40);
 
-    // 3. Cây Hoa Anh Đào (Sakura Tree) rực rỡ ở trung tâm
+    // 3. Cây Hoa Anh Đào (khung gỗ thanh mảnh & vô số bông hoa anh đào hồng nhạt)
     this.sakuraTree = new SakuraTree(this.scene);
     this.uiManager.updateProgress(60);
 
@@ -118,7 +115,7 @@ class MidAutumnApp {
     this.animalsManager = new AnimalsManager(this.scene);
     this.uiManager.updateProgress(75);
 
-    // 5. Đàn lồng đèn bay lượn quanh cây mang các lời chúc ý nghĩa
+    // 5. Đàn lồng đèn ước nguyện (Mẫu Đèn Trời Trung Quốc viết chữ thư pháp)
     this.floatingLanterns = new FloatingLanternsManager(
       this.scene,
       this.lightsManager,
@@ -128,12 +125,11 @@ class MidAutumnApp {
     );
     this.uiManager.updateProgress(85);
 
-    // 6. Cô Bé đứng dưới gốc cây cầm đèn lồng
+    // 6. Cô Bé đứng dưới gốc cây cầm đèn lồng ước nguyện
     this.littleGirl = new LittleGirl(
       this.scene,
       this.lightsManager,
       (handPos, wishText) => {
-        // Khi cô bé buông tay, sinh đèn trời bay lên
         this.floatingLanterns.spawnSkyLanternFromPosition(handPos, wishText);
         this.particlesManager.triggerBurst(handPos);
       }
@@ -143,7 +139,6 @@ class MidAutumnApp {
     // 7. Hệ thống hạt ánh lửa, cánh hoa anh đào và đom đóm
     this.particlesManager = new ParticlesManager(this.scene);
 
-    // Hoàn tất tải
     this.uiManager.updateProgress(100);
   }
 
@@ -157,7 +152,6 @@ class MidAutumnApp {
     });
 
     window.addEventListener('pointerup', (event) => {
-      // Nếu là thao tác vuốt xoay màn hình (di chuyển > 8px), không tính là click
       const dist = Math.hypot(event.clientX - pointerStartX, event.clientY - pointerStartY);
       if (dist > 8) return;
 
@@ -169,7 +163,7 @@ class MidAutumnApp {
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
-      // 1. Kiểm tra click vào Lồng Đèn bay quanh cây -> Mở lời chúc ý nghĩa!
+      // 1. Click vào Lồng Đèn Ước Nguyện -> Mở lời chúc ý nghĩa!
       const lanternHits = this.raycaster.intersectObjects(this.floatingLanterns.interactiveLanterns, true);
       if (lanternHits.length > 0) {
         let obj = lanternHits[0].object;
@@ -183,7 +177,7 @@ class MidAutumnApp {
         }
       }
 
-      // 2. Kiểm tra click vào Cô Bé hoặc đèn trên tay cô bé -> Thả đèn bay lên!
+      // 2. Click vào Cô Bé hoặc đèn trên tay cô bé -> Thả đèn bay lên!
       const girlHits = this.raycaster.intersectObjects(this.littleGirl.interactiveObjects, true);
       if (girlHits.length > 0) {
         this.littleGirl.releaseLanternFromHand('Cầu chúc gia đình bình an, vạn sự viên mãn!');
@@ -193,7 +187,7 @@ class MidAutumnApp {
         return;
       }
 
-      // 3. Kiểm tra click vào Thỏ Ngọc
+      // 3. Click vào Thỏ Ngọc
       const animalHits = this.raycaster.intersectObjects(this.animalsManager.interactiveObjects, true);
       if (animalHits.length > 0) {
         let rootObj = animalHits[0].object;
@@ -203,11 +197,11 @@ class MidAutumnApp {
         this.animalsManager.triggerHop(rootObj);
         this.soundManager.playInteractionSound('chime');
         this.particlesManager.triggerBurst(animalHits[0].point);
-        this.uiManager.showToast('🐰 Chú Thỏ Ngọc nhảy múa mừng trăng rằm!');
+        this.uiManager.showToast('🐰 Chú Thỏ Ngọc nhảy múa mừng đêm hội!');
         return;
       }
 
-      // 4. Click vào mặt đất hoặc không gian: bung nở chùm hoa lửa mini
+      // 4. Click vào mặt đất: tạo chùm tia hoa lửa nhỏ
       const groundHits = this.raycaster.intersectObjects(this.skyAndMoon.group.children, true);
       if (groundHits.length > 0) {
         this.particlesManager.triggerBurst(groundHits[0].point);
@@ -239,7 +233,6 @@ class MidAutumnApp {
     const delta = this.clock.getDelta();
     const time = this.clock.getElapsedTime();
 
-    // Cập nhật các module
     if (this.lightsManager) this.lightsManager.update(time);
     if (this.skyAndMoon) this.skyAndMoon.update(time);
     if (this.sakuraTree) this.sakuraTree.update(time);
@@ -248,7 +241,6 @@ class MidAutumnApp {
     if (this.floatingLanterns) this.floatingLanterns.update(time);
     if (this.particlesManager) this.particlesManager.update(time);
 
-    // Chuyển góc máy mượt mà
     if (this.targetCameraPos) {
       this.cameraTransitionProgress += delta * 1.6;
       const t = Math.min(1, this.cameraTransitionProgress);
@@ -261,9 +253,8 @@ class MidAutumnApp {
       }
     }
 
-    // Tự động xoay chậm điện ảnh
     this.controls.autoRotate = !this.targetCameraPos;
-    this.controls.autoRotateSpeed = 0.3;
+    this.controls.autoRotateSpeed = 0.28;
 
     this.controls.update();
     this.renderer.render(this.scene, this.camera);

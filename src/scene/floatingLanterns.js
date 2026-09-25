@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * Quản lý đàn lồng đèn bay lượn lơ lửng xung quanh cây hoa anh đào:
- * - Hơn 18 lồng đèn bay với nhiều hình dáng (Đèn Ông Sao, Đèn Lồng Tròn, Đèn Hoa Sen)
- * - Mỗi lồng đèn mang theo một lời chúc Trung Thu sâu sắc, ý nghĩa
- * - Click vào bất kỳ lồng đèn nào sẽ mở ra lời chúc đó
- * - Hỗ trợ đèn trời bay lên từ tay cô bé
+ * Quản lý lồng đèn Trung Thu - Mẫu Đèn Trời / Khổng Minh Đăng (Chinese Wish Lantern):
+ * - ĐÚNG 1 MẪU DUY NHẤT: Đèn giấy lụa vuông bo góc truyền thống có viết chữ điều ước (Thư pháp Phúc, An, Nguyện...)
+ * - Bay lơ lửng xung quanh cây hoa anh đào
+ * - Khi click vào sẽ mở lời chúc ý nghĩa tương ứng được viết trên chiếc đèn đó
  */
 export class FloatingLanternsManager {
   constructor(scene, lightsManager, onSelectWishCallback) {
@@ -17,277 +16,263 @@ export class FloatingLanternsManager {
     this.interactiveLanterns = [];
     this.skyLanterns = [];
 
-    this.createMaterials();
     this.initWishesData();
-    this.spawnOrbitingLanterns();
+    this.createMaterials();
+    this.spawnWishLanterns();
 
     this.scene.add(this.group);
-  }
-
-  createMaterials() {
-    this.starRedMat = new THREE.MeshStandardMaterial({
-      color: 0xe63946,
-      emissive: 0xd90429,
-      emissiveIntensity: 0.6,
-      roughness: 0.35
-    });
-
-    this.starGoldMat = new THREE.MeshStandardMaterial({
-      color: 0xffd166,
-      emissive: 0xff9e00,
-      emissiveIntensity: 0.6,
-      roughness: 0.35
-    });
-
-    this.lanternRedMat = new THREE.MeshStandardMaterial({
-      color: 0xd90429,
-      emissive: 0x9d0208,
-      emissiveIntensity: 0.75,
-      roughness: 0.4
-    });
-
-    this.lanternAmberMat = new THREE.MeshStandardMaterial({
-      color: 0xffb703,
-      emissive: 0xfb8500,
-      emissiveIntensity: 0.8,
-      roughness: 0.4
-    });
-
-    this.goldTrimMat = new THREE.MeshStandardMaterial({
-      color: 0xffd700,
-      metalness: 0.85,
-      roughness: 0.25
-    });
-
-    this.flameMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   }
 
   initWishesData() {
     this.wishes = [
       {
         id: 1,
+        symbol: '福',
+        symbolMeaning: 'Phúc',
         title: 'Đoàn Viên Sum Vầy',
         category: 'Gia Đình',
-        content: 'Ánh trăng rằm sáng soi muôn nẻo. Nguyện cho gia đình bạn muôn đời gắn kết, dù đi xa vạn dặm vẫn luôn có một mái nhà ấm êm, tràn ngập tiếng cười chờ đón ngày trở về.'
+        content: 'Ánh đèn trời thắp sáng đêm rằm. Nguyện cho gia đình bạn muôn đời gắn kết, dù đi xa vạn dặm vẫn luôn có một mái nhà ấm êm, tràn ngập tiếng cười chờ đón ngày trở về.'
       },
       {
         id: 2,
+        symbol: '安',
+        symbolMeaning: 'An',
         title: 'Bình An Như Ý',
         category: 'Tâm Hồn',
-        content: 'Chúc tâm hồn bạn luôn thanh tịnh như mặt hồ thu đêm rằm. Mọi âu lo phiền muộn cuốn theo gió mây, mỗi sớm mai thức dậy đều là một ngày an nhiên, tự tại.'
+        content: 'Chúc tâm hồn bạn luôn an yên như mặt nước hồ thu. Mọi âu lo phiền muộn gửi theo gió mây, mỗi ngày trôi qua đều là một ngày thanh thản, tự tại.'
       },
       {
         id: 3,
-        title: 'Thành Công Rực Rỡ',
-        category: 'Sự Nghiệp',
-        content: 'Chúc sự nghiệp và con đường phía trước của bạn sáng rực rỡ như vầng trăng tháng Tám. Vững vàng trước sóng gió và gặt hái những trái ngọt rạng danh.'
+        symbol: '愿',
+        symbolMeaning: 'Nguyện',
+        title: 'Tâm Nguyện Thành Hiện Thực',
+        category: 'Ước Mơ',
+        content: 'Chiếc đèn mang theo tâm nguyện chân thành nhất của bạn bay lên trời cao. Chúc mọi ước mơ bạn ấp ủ đều đơm hoa kết trái, tỏa sáng rực rỡ như muôn ánh sao đêm.'
       },
       {
         id: 4,
-        title: 'Tình Duyên Viên Mãn',
-        category: 'Tình Yêu',
-        content: 'Nguyện cho tình yêu của bạn luôn ngọt ngào và đậm đà như hương bánh nướng đêm hội. Cùng người thương nắm tay ngắm trọn vẹn từng mùa trăng hạnh phúc.'
+        symbol: '禄',
+        symbolMeaning: 'Lộc',
+        title: 'Vạn Sự Cát Tường',
+        category: 'Tài Lộc',
+        content: 'Đèn lồng thắp sáng điềm lành đến muôn nhà. Chúc sự nghiệp của bạn hanh thông, tài lộc dồi dào, vững bước trên con đường công danh.'
       },
       {
         id: 5,
-        title: 'Sức Khỏe Dồi Dào',
-        category: 'Trường Thọ',
-        content: 'Kính chúc ông bà cha mẹ trường thọ bách niên, thân tâm an lạc, phúc lộc dồi dào, mãi là bóng cây cổ thụ chở che cho con cháu bình yên.'
+        symbol: '寿',
+        symbolMeaning: 'Thọ',
+        title: 'Sức Khỏe Trường Thọ',
+        category: 'Sức Khỏe',
+        content: 'Kính chúc đấng sinh thành thân tâm an lạc, bách niên giai lão, luôn là cội nguồn yêu thương vững chãi cho con cháu sum vầy.'
       },
       {
         id: 6,
-        title: 'Tuổi Thơ Trong Trẻo',
-        category: 'Thiếu Nhi',
-        content: 'Chúc các em nhỏ luôn giữ trọn nụ cười hồn nhiên, rước đèn phá cỗ rộn vang tiếng cười và nuôi dưỡng những ước mơ bay cao tới tận cung trăng.'
+        symbol: '喜',
+        symbolMeaning: 'Hỷ',
+        title: 'Tình Duyên Viên Mãn',
+        category: 'Tình Yêu',
+        content: 'Nguyện cho tình yêu của bạn ngọt ngào và bền chặt. Cùng người tri kỷ nắm tay đi qua năm tháng, trọn vẹn yêu thương như vầng trăng rằm.'
       },
       {
         id: 7,
-        title: 'Tri Kỷ Bền Lâu',
-        category: 'Tình Bạn',
-        content: 'Cảm ơn bạn vì đã luôn đồng hành qua những thăng trầm cuộc sống. Chúc tình bạn của chúng ta mãi bền chặt, cùng sẻ chia từng tách trà thơm và niềm vui giản dị.'
+        symbol: '和',
+        symbolMeaning: 'Hòa',
+        title: 'Gia Đạo Thuận Hòa',
+        category: 'Hạnh Phúc',
+        content: 'Một mái nhà hòa thuận là nguồn cội của mọi phúc lành. Chúc tổ ấm của bạn luôn tràn ngập sự bao dung, ấm cúng và tiếng cười rộn rã.'
       },
       {
         id: 8,
-        title: 'Tâm Nguyện Đơm Hoa',
-        category: 'Ước Mơ',
-        content: 'Mỗi ngọn nến trong đèn lồng thắp sáng một niềm tin. Chúc những ước mơ bạn đang ấp ủ sớm trở thành hiện thực, tỏa sáng rực rỡ giữa bầu trời ước vọng.'
+        symbol: '智',
+        symbolMeaning: 'Trí',
+        title: 'Khai Sáng & Bền Bỉ',
+        category: 'Học Vấn',
+        content: 'Chúc con đường học tập và nghiên cứu của bạn luôn được soi sáng. Kiên định trước thử thách, mở rộng tầm nhìn để vươn tới những chân trời mới.'
       },
       {
         id: 9,
-        title: 'Vạn Sự Cát Tường',
-        category: 'Tài Lộc',
-        content: 'Trăng tròn mang điềm lành tới muôn nhà. Chúc bạn vạn sự hanh thông, công việc thuận buồm xuôi gió, tài lộc dồi dào, phúc như đông hải.'
+        symbol: '友',
+        symbolMeaning: 'Hữu',
+        title: 'Tri Kỷ Đồng Hành',
+        category: 'Tình Bạn',
+        content: 'Cảm ơn những người bạn chân thành đã luôn kề vai sát cánh. Chúc tình bạn của chúng ta mãi trong sáng và bền lâu qua từng mùa trăng.'
       },
       {
         id: 10,
-        title: 'Hạnh Phúc Giản Đơn',
-        category: 'Hạnh Phúc',
-        content: 'Chúc bạn tìm thấy niềm vui trong từng khoảnh khắc bình dị nhất: một miếng bánh ngọt, một tách trà nóng và ánh mắt ấm áp của những người thân yêu.'
+        symbol: '康',
+        symbolMeaning: 'Khang',
+        title: 'Thân Khỏe Tâm An',
+        category: 'Bình Yên',
+        content: 'Không có tài sản nào quý giá hơn sự khỏe mạnh và bình yên trong tâm trí. Chúc bạn luôn dồi dào sinh lực và nuôi dưỡng sự tĩnh tại mỗi ngày.'
       },
       {
         id: 11,
-        title: 'Nghị Lực Bất Tận',
-        category: 'Khát Vọng',
-        content: 'Dù cuộc sống có những ngày mây mù che khuất, hãy nhớ rằng sau cơn mưa trăng lại tròn và sáng. Chúc bạn luôn giữ vững niềm tin và nhiệt huyết tuổi trẻ.'
+        symbol: '乐',
+        symbolMeaning: 'Lạc',
+        title: 'Hạnh Phúc Giản Đơn',
+        category: 'Niềm Vui',
+        content: 'Chúc bạn tìm thấy hạnh phúc trong những điều bình dị nhất: một tách trà thơm, một chiếc bánh ngọt và ánh mắt trìu mến của người thân yêu.'
       },
       {
         id: 12,
-        title: 'Bình Yên Muôn Nhà',
+        symbol: '泰',
+        symbolMeaning: 'Thái',
+        title: 'Quốc Thái Dân An',
         category: 'An Lành',
-        content: 'Nguyện cầu ánh sáng dịu mát của trăng thu lan tỏa khắp nhân gian, xua tan lạnh lẽo, mang no ấm, hòa bình và nụ cười rạng rỡ tới mọi miền đất nước.'
+        content: 'Nguyện cầu ánh sáng ấm áp của ngàn ngọn đèn trời lan tỏa khắp thế gian, xua tan lạnh lẽo, mang no ấm, hòa bình và nụ cười rạng rỡ tới muôn nơi.'
       }
     ];
   }
 
   /**
-   * Tạo Đèn Ông Sao 5 cánh bay lơ lửng
+   * Tạo Texture giấy đèn trời với chữ thư pháp điều ước viết lên mặt lồng đèn
    */
-  createStarLanternMesh() {
-    const lantern = new THREE.Group();
-    const points = 5;
-    const outerR = 0.9;
-    const innerR = 0.38;
-    const shape = new THREE.Shape();
+  createWishLanternTexture(symbol, title) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
 
-    for (let i = 0; i < points * 2; i++) {
-      const r = i % 2 === 0 ? outerR : innerR;
-      const angle = (i * Math.PI) / points - Math.PI / 2;
-      const x = Math.cos(angle) * r;
-      const y = Math.sin(angle) * r;
-      if (i === 0) shape.moveTo(x, y);
-      else shape.lineTo(x, y);
-    }
-    shape.closePath();
+    // Nền giấy lụa màu kem vàng ấm áp
+    const grad = ctx.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, '#fff6cc');
+    grad.addColorStop(0.5, '#ffe599');
+    grad.addColorStop(1, '#ffd966');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
 
-    const geo = new THREE.ExtrudeGeometry(shape, {
-      depth: 0.22,
-      bevelEnabled: true,
-      bevelSegments: 2,
-      bevelSize: 0.08,
-      bevelThickness: 0.06
+    // Họa tiết khung viền cổ trang đỏ son
+    ctx.strokeStyle = 'rgba(217, 4, 41, 0.7)';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(30, 30, 452, 452);
+
+    ctx.strokeStyle = 'rgba(217, 4, 41, 0.4)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(45, 45, 422, 422);
+
+    // Chữ thư pháp lớn ở giữa mặt đèn (ví dụ: 福, 安, 愿, 禄...)
+    ctx.font = 'bold 150px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#b7094c';
+    ctx.fillText(symbol || '愿', 256, 230);
+
+    // Dòng chữ điều ước tiếng Việt tinh tế bên dưới
+    ctx.font = 'bold 30px "Montserrat", sans-serif';
+    ctx.fillStyle = '#9d0208';
+    ctx.fillText(title || 'Ước Nguyện', 256, 360);
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  createMaterials() {
+    this.bambooFrameMat = new THREE.MeshStandardMaterial({
+      color: 0x6f4e37, // Khung nẹp tre nâu ấm
+      roughness: 0.8
     });
-    geo.center();
 
-    const mesh = new THREE.Mesh(geo, this.starGoldMat);
-    lantern.add(mesh);
+    this.goldTrimMat = new THREE.MeshStandardMaterial({
+      color: 0xffd166,
+      metalness: 0.8,
+      roughness: 0.2
+    });
 
-    // Vành tre tròn
-    const ringGeo = new THREE.TorusGeometry(0.78, 0.03, 6, 24);
-    const ring = new THREE.Mesh(ringGeo, this.goldTrimMat);
-    lantern.add(ring);
+    this.flameMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  }
 
-    // Ngọn lửa nhỏ giữa
-    const flameGeo = new THREE.SphereGeometry(0.12, 6, 6);
+  /**
+   * Tạo ĐÚNG 1 MẪU ĐÈN TRỜI ƯỚC NGUYỆN (Chinese Sky/Wish Lantern)
+   */
+  createSingleWishLantern(wishData, scale = 1.0) {
+    const lantern = new THREE.Group();
+    lantern.scale.setScalar(scale);
+
+    // 1. Thân đèn giấy lụa hình trụ vuông bo góc (Đèn Khổng Minh Đăng truyền thống)
+    const bodyGeo = new THREE.CylinderGeometry(0.72, 0.58, 1.45, 12, 1, false);
+    bodyGeo.scale(1, 1, 0.9); // Hơi dẹt mềm mại
+
+    const lanternTexture = this.createWishLanternTexture(wishData.symbol, wishData.symbolMeaning);
+    const paperMat = new THREE.MeshStandardMaterial({
+      map: lanternTexture,
+      emissive: 0xffa200,
+      emissiveIntensity: 0.85,
+      roughness: 0.4,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    const bodyMesh = new THREE.Mesh(bodyGeo, paperMat);
+    bodyMesh.castShadow = true;
+    lantern.add(bodyMesh);
+
+    // 2. Khung nẹp tre trên và dưới
+    const topRimGeo = new THREE.TorusGeometry(0.72, 0.04, 6, 16);
+    topRimGeo.rotateX(Math.PI * 0.5);
+    const topRim = new THREE.Mesh(topRimGeo, this.bambooFrameMat);
+    topRim.position.y = 0.72;
+
+    const btmRimGeo = new THREE.TorusGeometry(0.58, 0.04, 6, 16);
+    btmRimGeo.rotateX(Math.PI * 0.5);
+    const btmRim = new THREE.Mesh(btmRimGeo, this.bambooFrameMat);
+    btmRim.position.y = -0.72;
+
+    lantern.add(topRim, btmRim);
+
+    // 3. Ngọn nến phát sáng bên trong đèn
+    const flameGeo = new THREE.SphereGeometry(0.15, 8, 8);
     const flame = new THREE.Mesh(flameGeo, this.flameMat);
+    flame.position.y = -0.15;
     lantern.add(flame);
 
-    // Tua rua
-    const tasselGeo = new THREE.CylinderGeometry(0.025, 0.06, 0.6, 6);
-    const tassel = new THREE.Mesh(tasselGeo, this.starRedMat);
-    tassel.position.y = -1.1;
+    // 4. Tua rua lụa đỏ may mắn thả dưới đáy đèn
+    const tasselGeo = new THREE.CylinderGeometry(0.02, 0.06, 0.8, 6);
+    const tasselMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.6 });
+    const tassel = new THREE.Mesh(tasselGeo, tasselMat);
+    tassel.position.y = -1.25;
     lantern.add(tassel);
 
-    return lantern;
-  }
+    // 5. Nguồn sáng ấm áp hắt ra từ bên trong đèn
+    const light = new THREE.PointLight(0xff9900, 1.5, 11, 1.5);
+    light.position.set(0, 0, 0);
+    lantern.add(light);
+    this.lightsManager.registerFlickerLight(light, 1.5, 0.4);
 
-  /**
-   * Tạo Lồng Đèn Tròn bay
-   */
-  createRoundLanternMesh(isAmber = false) {
-    const lantern = new THREE.Group();
-    const mat = isAmber ? this.lanternAmberMat : this.lanternRedMat;
-
-    const bodyGeo = new THREE.SphereGeometry(0.65, 14, 10);
-    bodyGeo.scale(1, 0.9, 1);
-    const body = new THREE.Mesh(bodyGeo, mat);
-    lantern.add(body);
-
-    // Nắp vàng
-    const capGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.08, 10);
-    const topCap = new THREE.Mesh(capGeo, this.goldTrimMat);
-    topCap.position.y = 0.58;
-    const btmCap = new THREE.Mesh(capGeo, this.goldTrimMat);
-    btmCap.position.y = -0.58;
-    lantern.add(topCap, btmCap);
-
-    // Tua rua
-    const tasselGeo = new THREE.CylinderGeometry(0.02, 0.05, 0.65, 6);
-    const tassel = new THREE.Mesh(tasselGeo, this.goldTrimMat);
-    tassel.position.y = -0.95;
-    lantern.add(tassel);
+    // Dữ liệu tương tác
+    lantern.userData = {
+      wish: wishData,
+      isClickableLantern: true,
+      flame
+    };
 
     return lantern;
   }
 
   /**
-   * Tạo Đèn Hoa Sen Hoàng Kim bay
+   * Sinh đàn lồng đèn ước nguyện bay lượn quanh cây hoa anh đào
    */
-  createLotusLanternMesh() {
-    const lantern = new THREE.Group();
-    const petalGeo = new THREE.ConeGeometry(0.3, 0.7, 5);
-    petalGeo.rotateX(0.35);
+  spawnWishLanterns() {
+    const count = 18;
 
-    // 6 cánh hoa xòe
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * Math.PI * 2) / 6;
-      const petal = new THREE.Mesh(petalGeo, this.lanternAmberMat);
-      petal.position.set(Math.cos(angle) * 0.35, 0, Math.sin(angle) * 0.35);
-      petal.rotation.y = -angle;
-      lantern.add(petal);
-    }
-
-    // Nhụy sen sáng rực
-    const coreGeo = new THREE.SphereGeometry(0.2, 8, 8);
-    const core = new THREE.Mesh(coreGeo, this.flameMat);
-    core.position.y = 0.15;
-    lantern.add(core);
-
-    return lantern;
-  }
-
-  /**
-   * Sinh đàn lồng đèn bay lượn theo quỹ đạo xung quanh cây hoa anh đào
-   */
-  spawnOrbitingLanterns() {
-    const totalLanterns = 18;
-
-    for (let i = 0; i < totalLanterns; i++) {
-      let mesh;
-      const type = i % 3;
-      if (type === 0) mesh = this.createStarLanternMesh();
-      else if (type === 1) mesh = this.createRoundLanternMesh(i % 2 === 0);
-      else mesh = this.createLotusLanternMesh();
-
-      // Nguồn sáng ấm áp đi kèm lồng đèn
-      const light = new THREE.PointLight(type === 1 ? 0xff4d00 : 0xffaa00, 1.2, 10, 1.6);
-      light.position.set(0, 0, 0);
-      mesh.add(light);
-      this.lightsManager.registerFlickerLight(light, 1.2, 0.35);
-
-      // Phân bố theo nhiều tầng cao độ và bán kính quanh cây anh đào
-      const radius = 5.5 + (i % 5) * 2.2;
-      const baseAngle = (i / totalLanterns) * Math.PI * 2;
-      const baseY = 2.8 + (i % 6) * 1.8;
-
-      mesh.position.set(Math.cos(baseAngle) * radius, baseY, Math.sin(baseAngle) * radius);
-
-      // Gắn lời chúc ý nghĩa
+    for (let i = 0; i < count; i++) {
       const wishData = this.wishes[i % this.wishes.length];
-      mesh.userData = {
-        wish: wishData,
-        isClickableLantern: true
-      };
+      const lantern = this.createSingleWishLantern(wishData, 0.95);
 
-      this.group.add(mesh);
-      this.interactiveLanterns.push(mesh);
+      const radius = 5.2 + (i % 5) * 2.3;
+      const baseAngle = (i / count) * Math.PI * 2;
+      const baseY = 3.0 + (i % 6) * 1.8;
+
+      lantern.position.set(Math.cos(baseAngle) * radius, baseY, Math.sin(baseAngle) * radius);
+
+      this.group.add(lantern);
+      this.interactiveLanterns.push(lantern);
 
       this.lanternList.push({
-        group: mesh,
+        group: lantern,
         radius,
         angle: baseAngle,
         baseY,
-        orbitSpeed: (0.08 + (i % 3) * 0.04) * (i % 2 === 0 ? 1 : -0.8) * 0.4,
-        bobSpeed: 1.0 + Math.random() * 0.8,
+        orbitSpeed: (0.07 + (i % 3) * 0.035) * (i % 2 === 0 ? 1 : -0.85) * 0.35,
+        bobSpeed: 1.0 + Math.random() * 0.7,
         bobAmp: 0.25 + Math.random() * 0.2,
         offset: Math.random() * Math.PI * 2
       });
@@ -295,22 +280,20 @@ export class FloatingLanternsManager {
   }
 
   /**
-   * Đèn trời phóng lên từ tay cô bé
+   * Tạo chiếc đèn trời ước nguyện mới được thả từ tay cô bé
    */
   spawnSkyLanternFromPosition(startPos, wishText = '') {
-    const skyLantern = this.createRoundLanternMesh(true);
-    skyLantern.position.copy(startPos);
-    skyLantern.scale.setScalar(0.75);
-
-    const light = new THREE.PointLight(0xffa200, 1.8, 12);
-    skyLantern.add(light);
-
-    const wishData = {
+    const customWish = {
+      id: Date.now(),
+      symbol: '愿',
+      symbolMeaning: 'Nguyện',
       title: 'Tâm Nguyện Đêm Rằm',
       category: 'Ước Nguyện',
-      content: wishText || 'Cầu chúc gia đình luôn bình an, mạnh khỏe và sum vầy trọn vẹn!'
+      content: wishText || 'Cầu chúc gia đình luôn bình an, mạnh khỏe và vạn sự viên mãn!'
     };
-    skyLantern.userData = { wish: wishData, isClickableLantern: true };
+
+    const skyLantern = this.createSingleWishLantern(customWish, 0.85);
+    skyLantern.position.copy(startPos);
 
     this.group.add(skyLantern);
     this.interactiveLanterns.push(skyLantern);
@@ -320,7 +303,7 @@ export class FloatingLanternsManager {
       speedY: 0.05 + Math.random() * 0.025,
       driftX: (Math.random() - 0.5) * 0.012,
       driftZ: (Math.random() - 0.5) * 0.012,
-      rotSpeed: (Math.random() - 0.5) * 0.015,
+      rotSpeed: (Math.random() - 0.5) * 0.012,
       swayOffset: Math.random() * Math.PI * 2,
       life: 0,
       maxLife: 1000
@@ -328,7 +311,7 @@ export class FloatingLanternsManager {
   }
 
   update(time) {
-    // 1. Quỹ đạo bay lượn và nhấp nhô của đàn lồng đèn quanh cây anh đào
+    // 1. Quỹ đạo bay lượn và nhấp nhô của đàn lồng đèn ước nguyện
     for (let i = 0; i < this.lanternList.length; i++) {
       const item = this.lanternList[i];
       item.angle += item.orbitSpeed * 0.015;
@@ -337,12 +320,11 @@ export class FloatingLanternsManager {
       item.group.position.z = Math.sin(item.angle) * item.radius;
       item.group.position.y = item.baseY + Math.sin(time * item.bobSpeed + item.offset) * item.bobAmp;
 
-      // Khẽ đung đưa theo hướng bay
       item.group.rotation.y = -item.angle + Math.PI / 2;
-      item.group.rotation.z = Math.sin(time * 2 + item.offset) * 0.08;
+      item.group.rotation.z = Math.sin(time * 2 + item.offset) * 0.06;
     }
 
-    // 2. Chuyển động bay lên cung trăng của đèn trời
+    // 2. Chuyển động bay lên bầu trời sao của các đèn trời được thả
     for (let i = this.skyLanterns.length - 1; i >= 0; i--) {
       const sl = this.skyLanterns[i];
       sl.life++;

@@ -1,5 +1,5 @@
 /**
- * Quản lý giao diện, hiển thị lời chúc từ lồng đèn, thả đèn từ tay cô bé và tương tác
+ * Quản lý giao diện, hiển thị lời chúc từ đèn trời ước nguyện và tương tác
  */
 export class UIManager {
   constructor(soundManager, onReleaseWish, onSwitchCamera, onGirlRelease) {
@@ -55,7 +55,6 @@ export class UIManager {
   }
 
   bindEvents() {
-    // Ẩn/hiện thiệp
     this.btnToggleCard.addEventListener('click', () => {
       this.card.classList.toggle('minimized');
     });
@@ -65,7 +64,6 @@ export class UIManager {
       this.showToast('Bấm "Thiệp Chúc" ở góc trên để mở lại thiệp.');
     });
 
-    // Bật/tắt âm thanh
     this.btnAudio.addEventListener('click', () => {
       const isPlaying = this.soundManager.toggleMusic();
       if (isPlaying) {
@@ -77,7 +75,6 @@ export class UIManager {
       }
     });
 
-    // Đổi góc nhìn
     this.btnCamera.addEventListener('click', () => {
       if (this.onSwitchCamera) {
         const viewName = this.onSwitchCamera();
@@ -85,19 +82,16 @@ export class UIManager {
       }
     });
 
-    // Thả đèn từ tay cô bé
     this.btnGirlLantern.addEventListener('click', () => {
       if (this.onGirlRelease) {
         this.onGirlRelease('Cầu mong gia đình bình an, vạn sự cát tường!');
       }
     });
 
-    // Đóng modal lời chúc lồng đèn
     this.btnCloseLanternWish.addEventListener('click', () => {
       this.modalLanternWish.classList.add('hidden');
     });
 
-    // Sao chép lời chúc từ lồng đèn
     this.btnCopyLanternWish.addEventListener('click', () => {
       const title = this.wishModalTitle.textContent;
       const content = this.wishModalContent.textContent;
@@ -106,7 +100,6 @@ export class UIManager {
       this.showToast('✨ Đã sao chép lời chúc ý nghĩa này!');
     });
 
-    // Modal thả đèn tùy biến
     this.btnCloseModal.addEventListener('click', () => {
       this.modalWish.classList.add('hidden');
     });
@@ -120,7 +113,6 @@ export class UIManager {
       this.wishInput.value = '';
     });
 
-    // Modal sửa thiệp
     this.btnEditWish.addEventListener('click', () => {
       this.inputRecipient.value = this.displayRecipient.textContent;
       this.inputMessage.value = this.displayMessage.textContent;
@@ -151,12 +143,10 @@ export class UIManager {
     });
   }
 
-  /**
-   * Hiển thị modal lời chúc ý nghĩa khi click vào lồng đèn
-   */
   showLanternWish(wishData) {
     if (!wishData) return;
-    this.wishModalCategory.textContent = `🏮 ${wishData.category || 'Lời Chúc Trung Thu'}`;
+    const symbolStr = wishData.symbol ? `[ ${wishData.symbol} - ${wishData.symbolMeaning} ]` : '';
+    this.wishModalCategory.textContent = `🏮 Đèn Ước Nguyện ${symbolStr}`;
     this.wishModalTitle.textContent = wishData.title || 'Đoàn Viên Sum Vầy';
     this.wishModalContent.textContent = `"${wishData.content}"`;
     this.modalLanternWish.classList.remove('hidden');
