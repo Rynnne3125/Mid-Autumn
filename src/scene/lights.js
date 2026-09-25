@@ -12,38 +12,21 @@ export class LightsManager {
   }
 
   setupLights() {
-    // 1. Ánh sáng môi trường đêm ấm áp
-    this.ambientLight = new THREE.AmbientLight(0x422f24, 2.6);
+    // 1. Ánh sáng môi trường đêm ấm áp, lan tỏa 100% đồng đều không tạo vệt sáng tối
+    this.ambientLight = new THREE.AmbientLight(0x563e2e, 2.4);
     this.scene.add(this.ambientLight);
 
-    // 2. Hemisphere: ánh sao từ trên và phản xạ ấm từ nền đất
-    this.hemiLight = new THREE.HemisphereLight(0x94a3b8, 0x6e432a, 1.8);
+    // 2. Hemisphere: ánh sáng bầu trời đêm từ trên và phản xạ nâu đất ấm từ dưới, êm ái tự nhiên
+    this.hemiLight = new THREE.HemisphereLight(0x94a3b8, 0x4e3524, 1.6);
     this.scene.add(this.hemiLight);
 
-    // 3. Ánh sáng sao định hướng
-    this.starDirLight = new THREE.DirectionalLight(0xf1f5f9, 1.4);
-    this.starDirLight.position.set(15, 35, 20);
+    // 3. Ánh sáng dịu nhẹ định hướng từ trên cao (ánh sao đêm tỏa rộng, không tạo quầng sáng cục bộ)
+    this.starDirLight = new THREE.DirectionalLight(0xf8fafc, 1.2);
+    this.starDirLight.position.set(10, 40, 15);
     this.scene.add(this.starDirLight);
-
-    // 4. Ánh sáng ấm trung tâm dưới gốc cây
-    this.treeWarmLight = new THREE.PointLight(0xffa834, 2.8, 35, 1.2);
-    this.treeWarmLight.position.set(0, 3.2, 1.2);
-    this.scene.add(this.treeWarmLight);
-
-    // 5. Đèn hắt sàn mềm mại tỏa ánh sáng nhẹ quanh nền đất
-    this.groundGlowLight = new THREE.PointLight(0xffc278, 2.2, 30, 1.3);
-    this.groundGlowLight.position.set(0, 0.9, 0);
-    this.scene.add(this.groundGlowLight);
   }
 
   update(time) {
-    if (this.treeWarmLight) {
-      const flicker = 2.8 + Math.sin(time * 5) * 0.25;
-      this.treeWarmLight.intensity = flicker;
-    }
-    if (this.groundGlowLight) {
-      const gFlicker = 2.2 + Math.sin(time * 3 + 1.2) * 0.2;
-      this.groundGlowLight.intensity = gFlicker;
-    }
+    // Ánh sáng đồng đều, êm dịu, không giật nháy
   }
 }

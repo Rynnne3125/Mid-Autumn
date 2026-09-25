@@ -158,7 +158,6 @@ export class AnimalsManager {
     bodyGeo.scale(0.9, 1.12, 0.95);
     const body = new THREE.Mesh(bodyGeo, this.rabbitFurMat);
     body.position.y = 0.65;
-    body.castShadow = true;
     rabbit.add(body);
 
     // Đầu thỏ

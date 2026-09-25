@@ -81,19 +81,16 @@ export class SkyAndMoon {
     }
     islandGeo.computeVertexNormals();
 
-    // Màu đất nâu ấm tự nhiên có ánh sáng nhẹ lan tỏa dịu dàng
+    // Màu đất nâu ấm tự nhiên, hoàn toàn đồng đều và mịn màng (không chói, không vệt sáng)
     const earthMat = new THREE.MeshStandardMaterial({
-      color: 0x422b1c, // Nâu đất tự nhiên, sáng nhẹ hơn
-      emissive: 0x1f130b, // Ánh sáng nhẹ ấm áp trên bề mặt nền đất
-      emissiveIntensity: 0.5,
-      roughness: 0.8,
-      metalness: 0.05,
-      flatShading: true
+      color: 0x3d2719, // Nâu đất tự nhiên, đồng đều toàn bộ nền đồi
+      roughness: 0.95, // Độ nhám cao để tán xạ ánh sáng đều, tuyệt đối không bị chói lóa
+      metalness: 0.0,
+      flatShading: false // Bề mặt cong mềm mại tự nhiên, không bị góc cạnh gãy khúc
     });
 
     this.islandMesh = new THREE.Mesh(islandGeo, earthMat);
     this.islandMesh.position.set(0, -3.0, 0);
-    this.islandMesh.receiveShadow = true;
     this.group.add(this.islandMesh);
 
     // Điểm xuyết hoa vàng nhỏ và cánh hoa đào rụng trên nền đất nâu

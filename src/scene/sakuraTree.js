@@ -75,8 +75,6 @@ export class SakuraTree {
     trunkGeo.computeVertexNormals();
 
     const trunkMesh = new THREE.Mesh(trunkGeo, this.woodMat);
-    trunkMesh.castShadow = true;
-    trunkMesh.receiveShadow = true;
     this.group.add(trunkMesh);
 
     // Rễ cây gỗ ôm đồi cỏ
@@ -267,7 +265,6 @@ export class SakuraTree {
       const mergedFlowerGeo = BufferGeometryUtils.mergeGeometries(flowerGeometries, false);
 
       const instancedMesh = new THREE.InstancedMesh(mergedFlowerGeo, this.blossomPetalMat, totalFlowers);
-      instancedMesh.castShadow = true;
       const dummy = new THREE.Object3D();
 
       const palette = [
