@@ -1,12 +1,15 @@
+import { getStickerSvg } from './stickers.js';
+
 /**
  * Quản lý giao diện tối giản:
- * - Hiển thị modal lời chúc khi click lồng đèn
+ * - Hiển thị nhãn dán Sticker chibi siêu cute cho từng lời chúc khi click lồng đèn
  * - Bật âm nhạc nhẹ nhàng khi người dùng tương tác
  */
 export class UIManager {
   constructor(soundManager) {
     this.soundManager = soundManager;
     this.hasStartedAudio = false;
+    this.currentWishText = '';
 
     this.initElements();
     this.bindEvents();
@@ -16,8 +19,7 @@ export class UIManager {
     this.loader = document.getElementById('loader');
     this.modalLanternWish = document.getElementById('modal-lantern-wish');
     this.btnCloseLanternWish = document.getElementById('btn-close-lantern-wish');
-    this.wishModalCategory = document.getElementById('wish-modal-category');
-    this.wishModalTitle = document.getElementById('wish-modal-title');
+    this.wishModalSticker = document.getElementById('wish-modal-sticker');
     this.wishModalContent = document.getElementById('wish-modal-content');
     this.btnCopyLanternWish = document.getElementById('btn-copy-lantern-wish');
     this.toast = document.getElementById('toast');
@@ -43,9 +45,7 @@ export class UIManager {
     // Sao chép lời chúc
     this.btnCopyLanternWish.addEventListener('click', (e) => {
       e.stopPropagation();
-      const title = this.wishModalTitle.textContent;
-      const content = this.wishModalContent.textContent;
-      const fullText = `🏮 [${title}] 🏮\n${content}\n✨ Chúc Mừng Tết Trung Thu! ✨`;
+      const fullText = `🏮 "${this.currentWishText}"\n✨ Chúc Mừng Tết Trung Thu! ✨`;
       navigator.clipboard?.writeText(fullText);
       this.showToast('✨ Đã sao chép lời chúc ý nghĩa!');
     });
@@ -60,10 +60,18 @@ export class UIManager {
 
   showLanternWish(wishData) {
     if (!wishData) return;
-    const symbolStr = wishData.symbol ? `[ ${wishData.symbol} - ${wishData.symbolMeaning} ]` : '';
-    this.wishModalCategory.textContent = `🏮 Đèn Ước Nguyện ${symbolStr}`;
-    this.wishModalTitle.textContent = wishData.title || 'Đoàn Viên Sum Vầy';
-    this.wishModalContent.textContent = `"${wishData.content}"`;
+    this.currentWishText = wishData.content || '';
+
+    // Hiển thị sticker cute tương ứng với từng câu chúc
+    if (this.wishModalSticker) {
+      this.wishModalSticker.innerHTML = getStickerSvg(wishData.id);
+    }
+
+    // Hiển thị nội dung lời chúc
+    if (this.wishModalContent) {
+      this.wishModalContent.textContent = `"${wishData.content}"`;
+    }
+
     this.modalLanternWish.classList.remove('hidden');
     this.soundManager.playInteractionSound('wish');
   }
