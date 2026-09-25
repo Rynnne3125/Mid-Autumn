@@ -16,6 +16,7 @@ export class AnimalsManager {
     this.createChuCuoiFlute();
     this.createJadeRabbit();
     this.createTeaAndMooncakeSet();
+    this.createHoppingRabbits();
 
     this.scene.add(this.group);
   }
@@ -291,6 +292,119 @@ export class AnimalsManager {
     this.group.add(tableGroup);
   }
 
+  /**
+   * Tạo mô hình một chú thỏ trắng chibi đáng yêu với tai ve vẩy, mắt sáng, má hồng
+   */
+  buildCuteRabbitModel(scale = 0.55) {
+    const rabbit = new THREE.Group();
+    rabbit.scale.setScalar(scale);
+
+    // 1. Thân thỏ tròn xoe mập mạp
+    const bodyGeo = new THREE.SphereGeometry(0.55, 12, 12);
+    bodyGeo.scale(0.85, 1.05, 0.9);
+    const body = new THREE.Mesh(bodyGeo, this.rabbitFurMat);
+    body.position.y = 0.55;
+    rabbit.add(body);
+
+    // 2. Đầu thỏ tròn xinh
+    const headGeo = new THREE.SphereGeometry(0.42, 12, 12);
+    const head = new THREE.Mesh(headGeo, this.rabbitFurMat);
+    head.position.set(0, 1.25, 0.15);
+    rabbit.add(head);
+
+    // 3. Đôi mắt to tròn long lanh
+    const eyeGeo = new THREE.SphereGeometry(0.055, 6, 6);
+    const eyeL = new THREE.Mesh(eyeGeo, this.eyeMat);
+    eyeL.position.set(-0.14, 1.35, 0.48);
+    const eyeR = new THREE.Mesh(eyeGeo, this.eyeMat);
+    eyeR.position.set(0.14, 1.35, 0.48);
+    rabbit.add(eyeL, eyeR);
+
+    // 4. Má hồng phấn phúng phính
+    const cheekMat = new THREE.MeshBasicMaterial({ color: 0xffa8ba, transparent: true, opacity: 0.65 });
+    const cheekL = new THREE.Mesh(new THREE.CircleGeometry(0.06, 8), cheekMat);
+    cheekL.position.set(-0.22, 1.25, 0.5);
+    const cheekR = new THREE.Mesh(new THREE.CircleGeometry(0.06, 8), cheekMat);
+    cheekR.position.set(0.22, 1.25, 0.5);
+    rabbit.add(cheekL, cheekR);
+
+    // 5. Mũi hồng nhỏ xinh
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), this.rabbitPinkMat);
+    nose.position.set(0, 1.3, 0.54);
+    rabbit.add(nose);
+
+    // 6. Đôi tai dài thanh thoát
+    const earGeo = new THREE.CylinderGeometry(0.05, 0.1, 0.85, 8);
+    earGeo.scale(0.4, 1, 1.1);
+
+    const leftEar = new THREE.Mesh(earGeo, this.rabbitFurMat);
+    leftEar.position.set(-0.14, 1.9, 0.08);
+    leftEar.rotation.set(-0.1, 0, -0.15);
+
+    const rightEar = new THREE.Mesh(earGeo, this.rabbitFurMat);
+    rightEar.position.set(0.14, 1.9, 0.08);
+    rightEar.rotation.set(-0.1, 0, 0.15);
+    rabbit.add(leftEar, rightEar);
+
+    // 7. Đuôi tròn bông xù
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), this.rabbitFurMat);
+    tail.position.set(0, 0.4, -0.55);
+    rabbit.add(tail);
+
+    // 8. Bàn chân nhỏ xinh
+    const footGeo = new THREE.SphereGeometry(0.12, 6, 6);
+    footGeo.scale(0.8, 0.6, 1.4);
+    const footL = new THREE.Mesh(footGeo, this.rabbitFurMat);
+    footL.position.set(-0.25, 0.1, 0.1);
+    const footR = new THREE.Mesh(footGeo, this.rabbitFurMat);
+    footR.position.set(0.25, 0.1, 0.1);
+    rabbit.add(footL, footR);
+
+    // Collider cho click tương tác
+    const collider = new THREE.Mesh(new THREE.SphereGeometry(0.9, 4, 4), new THREE.MeshBasicMaterial({ visible: false }));
+    collider.position.y = 0.8;
+    collider.userData = { isRabbit: true, name: 'Thỏ Con Hoạt Bát' };
+    rabbit.add(collider);
+    this.interactiveObjects.push(collider);
+
+    return { group: rabbit, ears: [leftEar, rightEar], body, head };
+  }
+
+  /**
+   * Tạo đàn thỏ nhảy liên tục xung quanh gốc cây hoa anh đào
+   */
+  createHoppingRabbits() {
+    this.hoppingRabbits = [];
+
+    // Danh sách 5 chú thỏ với các bán kính, tốc độ và nhịp nhảy khác nhau
+    const rabbitConfigs = [
+      { radius: 4.8, speed: 0.65, hopFreq: 7.2, hopHeight: 0.6, scale: 0.58, baseAngle: 0.3, baseY: 0.15 },
+      { radius: 6.2, speed: 0.52, hopFreq: 6.4, hopHeight: 0.55, scale: 0.52, baseAngle: 1.6, baseY: 0.2 },
+      { radius: 7.6, speed: -0.58, hopFreq: 6.8, hopHeight: 0.65, scale: 0.55, baseAngle: 3.1, baseY: 0.18 }, // Chạy ngược chiều tạo sự sống động!
+      { radius: 5.6, speed: 0.72, hopFreq: 7.8, hopHeight: 0.58, scale: 0.48, baseAngle: 4.5, baseY: 0.22 },
+      { radius: 8.8, speed: 0.44, hopFreq: 5.8, hopHeight: 0.7, scale: 0.62, baseAngle: 5.6, baseY: 0.15 }
+    ];
+
+    rabbitConfigs.forEach((cfg, idx) => {
+      const model = this.buildCuteRabbitModel(cfg.scale);
+      this.group.add(model.group);
+
+      this.hoppingRabbits.push({
+        group: model.group,
+        ears: model.ears,
+        body: model.body,
+        radius: cfg.radius,
+        speed: cfg.speed,
+        hopFreq: cfg.hopFreq,
+        hopHeight: cfg.hopHeight,
+        scale: cfg.scale,
+        angle: cfg.baseAngle,
+        baseY: cfg.baseY,
+        offset: idx * 1.3
+      });
+    });
+  }
+
   triggerHop() {
     if (!this.jadeRabbit) return;
     const startY = this.jadeRabbit.position.y;
@@ -322,6 +436,44 @@ export class AnimalsManager {
         const twitch = Math.sin(time * 3.5) * 0.04;
         this.rabbitEars[0].rotation.z = -0.16 + twitch;
         this.rabbitEars[1].rotation.z = 0.16 - twitch;
+      }
+    }
+
+    // Đàn thỏ nhảy nhót liên tục xung quanh cây hoa anh đào
+    if (this.hoppingRabbits) {
+      for (let i = 0; i < this.hoppingRabbits.length; i++) {
+        const r = this.hoppingRabbits[i];
+        r.angle += r.speed * 0.015;
+
+        // Bán kính có độ dao động nhẹ tự nhiên
+        const curRadius = r.radius + Math.sin(time * 0.4 + r.offset) * 0.25;
+        r.group.position.x = Math.cos(r.angle) * curRadius;
+        r.group.position.z = Math.sin(r.angle) * curRadius;
+
+        // Nhịp nhảy tưng tưng liên tục (Hop bounce)
+        const hopCycle = time * r.hopFreq + r.offset;
+        const hopVal = Math.abs(Math.sin(hopCycle));
+        r.group.position.y = r.baseY + hopVal * r.hopHeight;
+
+        // Thỏ quay mặt theo hướng nhảy
+        const forwardAngle = r.speed > 0 ? r.angle + Math.PI / 2 : r.angle - Math.PI / 2;
+        r.group.rotation.y = -forwardAngle + Math.PI / 2;
+
+        // Nghiêng người khi bật nhảy (Pitch tilt)
+        r.group.rotation.x = Math.cos(hopCycle) * 0.22 * (r.speed > 0 ? 1 : -1);
+
+        // Hiệu ứng nhún mình (Squash and stretch)
+        const squash = Math.max(0, 0.16 - hopVal * 0.22);
+        r.group.scale.set(
+          r.scale * (1 + squash * 0.5),
+          r.scale * (1 - squash),
+          r.scale * (1 + squash * 0.5)
+        );
+
+        // Đôi tai ve vẩy vui tươi khi nhảy
+        const twitch = Math.sin(time * 8 + r.offset) * 0.12;
+        r.ears[0].rotation.z = -0.15 + twitch;
+        r.ears[1].rotation.z = 0.15 - twitch;
       }
     }
   }

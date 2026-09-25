@@ -19,7 +19,6 @@ export class UIManager {
 
   initElements() {
     this.loader = document.getElementById('loader');
-    this.girlChatBubble = document.getElementById('girl-chat-bubble');
 
     // Modal xem lời chúc
     this.modalLanternWish = document.getElementById('modal-lantern-wish');
@@ -47,14 +46,6 @@ export class UIManager {
       }
     };
     window.addEventListener('pointerdown', startAudioOnFirstTouch);
-
-    // Click vào bong bóng chat của cô bé
-    if (this.girlChatBubble) {
-      this.girlChatBubble.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.openWishInputModal();
-      });
-    }
 
     // Đóng modal xem lời chúc
     this.btnCloseLanternWish.addEventListener('click', (e) => {
@@ -138,17 +129,6 @@ export class UIManager {
       }
     }, 100);
     this.soundManager.playInteractionSound('wish');
-  }
-
-  updateGirlBubblePosition(screenX, screenY, isVisible) {
-    if (!this.girlChatBubble) return;
-    if (isVisible) {
-      this.girlChatBubble.style.left = `${screenX}px`;
-      this.girlChatBubble.style.top = `${screenY}px`;
-      this.girlChatBubble.classList.remove('hidden');
-    } else {
-      this.girlChatBubble.classList.add('hidden');
-    }
   }
 
   showLanternWish(wishData) {

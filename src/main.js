@@ -18,10 +18,6 @@ class MidAutumnApp {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    // Vị trí mỏ neo không gian 3D của bong bóng chat "🏮 Thả đèn" trên đầu cô bé
-    this.girlBubbleWorldPos = new THREE.Vector3(1.5, 3.25, 3.2);
-    this.tempScreenPos = new THREE.Vector3();
-
     this.initThree();
     this.initAudioAndUI();
     this.initSceneObjects();
@@ -189,18 +185,6 @@ class MidAutumnApp {
     if (this.animalsManager) this.animalsManager.update(time);
     if (this.floatingLanterns) this.floatingLanterns.update(time);
     if (this.particlesManager) this.particlesManager.update(time);
-
-    // Cập nhật vị trí bong bóng chat "🏮 Thả đèn" trên đầu cô bé
-    if (this.uiManager && this.camera) {
-      this.tempScreenPos.copy(this.girlBubbleWorldPos).project(this.camera);
-      if (this.tempScreenPos.z < 1) {
-        const screenX = (this.tempScreenPos.x * 0.5 + 0.5) * window.innerWidth;
-        const screenY = (-(this.tempScreenPos.y * 0.5) + 0.5) * window.innerHeight;
-        this.uiManager.updateGirlBubblePosition(screenX, screenY, true);
-      } else {
-        this.uiManager.updateGirlBubblePosition(0, 0, false);
-      }
-    }
 
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.25;

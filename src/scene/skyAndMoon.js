@@ -81,10 +81,12 @@ export class SkyAndMoon {
     }
     islandGeo.computeVertexNormals();
 
-    // Màu đất nâu sẫm ấm áp tự nhiên (Deep Rich Brown)
+    // Màu đất nâu ấm tự nhiên có ánh sáng nhẹ lan tỏa dịu dàng
     const earthMat = new THREE.MeshStandardMaterial({
-      color: 0x22130c, // Nâu đậm
-      roughness: 0.85,
+      color: 0x422b1c, // Nâu đất tự nhiên, sáng nhẹ hơn
+      emissive: 0x1f130b, // Ánh sáng nhẹ ấm áp trên bề mặt nền đất
+      emissiveIntensity: 0.5,
+      roughness: 0.8,
       metalness: 0.05,
       flatShading: true
     });
