@@ -43,9 +43,11 @@ export class UIManager {
         this.hasStartedAudio = true;
         this.soundManager.start();
         window.removeEventListener('pointerdown', startAudioOnFirstTouch);
+        window.removeEventListener('touchstart', startAudioOnFirstTouch);
       }
     };
-    window.addEventListener('pointerdown', startAudioOnFirstTouch);
+    window.addEventListener('pointerdown', startAudioOnFirstTouch, { passive: true });
+    window.addEventListener('touchstart', startAudioOnFirstTouch, { passive: true });
 
     // Đóng modal xem lời chúc
     this.btnCloseLanternWish.addEventListener('click', (e) => {

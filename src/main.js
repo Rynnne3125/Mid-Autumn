@@ -37,7 +37,6 @@ class MidAutumnApp {
       0.1,
       400
     );
-    this.camera.position.set(0, 16, 44);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -56,9 +55,43 @@ class MidAutumnApp {
     this.controls.rotateSpeed = 0.7;
     this.controls.zoomSpeed = 0.8;
     this.controls.maxPolarAngle = Math.PI / 2 - 0.01;
-    this.controls.minDistance = 10;
-    this.controls.maxDistance = 85;
     this.controls.target.set(0, 5.5, 0);
+
+    // Hỗ trợ cảm ứng vuốt xoay 1 ngón, phóng to/thu nhỏ 2 ngón trên điện thoại
+    this.controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN
+    };
+
+    // Tự động căn chỉnh góc nhìn hoàn hảo cho màn hình điện thoại dọc hoặc máy tính
+    this.updateCameraFraming(true);
+  }
+
+  /**
+   * Cân chỉnh góc nhìn camera thích ứng màn hình:
+   * - Điện thoại (màn hình dọc aspect < 1.0): mở rộng FOV và lùi xa camera để trọn vẹn cả cây hoa anh đào, lồng đèn và đàn thỏ
+   * - Máy tính/Tablet (màn hình ngang aspect >= 1.0): góc nhìn 42 độ chuẩn điện ảnh
+   */
+  updateCameraFraming(isInitial = false) {
+    const aspect = window.innerWidth / window.innerHeight;
+    this.camera.aspect = aspect;
+
+    if (aspect < 1.0) {
+      this.camera.fov = Math.min(60, Math.max(48, 42 / Math.max(0.68, aspect)));
+      if (isInitial) {
+        this.camera.position.set(0, 16.5, 54);
+      }
+      this.controls.minDistance = 12;
+      this.controls.maxDistance = 110;
+    } else {
+      this.camera.fov = 42;
+      if (isInitial) {
+        this.camera.position.set(0, 16, 44);
+      }
+      this.controls.minDistance = 10;
+      this.controls.maxDistance = 85;
+    }
+    this.camera.updateProjectionMatrix();
   }
 
   initAudioAndUI() {
@@ -109,9 +142,9 @@ class MidAutumnApp {
 
     window.addEventListener('pointerup', (event) => {
       const dist = Math.hypot(event.clientX - pointerStartX, event.clientY - pointerStartY);
-      if (dist > 8) return;
+      if (dist > 12) return; // Khoảng dung sai 12px tối ưu cho cả cảm ứng ngón tay trên điện thoại và chuột máy tính
 
-      if (event.target.closest('#modal-lantern-wish') || event.target.closest('.bottom-hint-note')) {
+      if (event.target.closest('#modal-lantern-wish') || event.target.closest('#modal-wish-input') || event.target.closest('.bottom-hint-note')) {
         return;
       }
 
@@ -166,8 +199,7 @@ class MidAutumnApp {
   }
 
   onResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
+    this.updateCameraFraming(false);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   }
