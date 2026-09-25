@@ -19,6 +19,7 @@ export class FloatingLanternsManager {
     this.initWishesData();
     this.createMaterials();
     this.spawnFifteenLanterns();
+    this.loadSavedWishesFromLocalStorage();
 
     this.scene.add(this.group);
   }
@@ -293,32 +294,86 @@ export class FloatingLanternsManager {
   }
 
   spawnSkyLanternFromPosition(startPos, wishText = '') {
+    const textContent = wishText.trim() || 'Chúc bạn một mùa Trung Thu đoàn viên, ấm áp và trọn vẹn niềm vui.';
     const customWish = {
-      id: Date.now(),
+      id: 9, // Sticker thỏ ôm đèn trái tim
       symbol: '愿',
       symbolMeaning: 'Nguyện',
       title: 'Tâm Nguyện Thả Lên Trời',
-      content: wishText || 'Chúc bạn một mùa Trung Thu đoàn viên, ấm áp và trọn vẹn niềm vui.'
+      content: textContent
     };
 
-    const { lantern, collider } = this.createGlowingWishLantern(customWish, 0.85);
+    const { lantern, collider } = this.createGlowingWishLantern(customWish, 0.9);
     lantern.position.copy(startPos);
 
     this.group.add(lantern);
     this.interactiveLanterns.push(collider);
 
+    // Lưu vào localStorage để không bị mất khi tải lại trang
+    this.saveWishToLocalStorage(textContent);
+
+    const targetY = 15.0 + Math.random() * 10.0;
     this.skyLanterns.push({
       group: lantern,
       collider,
       flameGroup: lantern.userData.flameGroup,
-      speedY: 0.045 + Math.random() * 0.02,
-      driftX: (Math.random() - 0.5) * 0.01,
-      driftZ: (Math.random() - 0.5) * 0.01,
-      rotSpeed: 0.005,
-      swayOffset: Math.random() * Math.PI * 2,
-      life: 0,
-      maxLife: 1000
+      glowSprite: lantern.userData.glowSprite,
+      targetY,
+      speedY: 0.055,
+      driftX: (Math.random() - 0.5) * 0.006,
+      driftZ: (Math.random() - 0.5) * 0.006,
+      rotSpeed: 0.003,
+      swayOffset: Math.random() * Math.PI * 2
     });
+  }
+
+  saveWishToLocalStorage(text) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('midAutumn_userWishes') || '[]');
+      saved.push({ text, time: Date.now() });
+      localStorage.setItem('midAutumn_userWishes', JSON.stringify(saved.slice(-8)));
+    } catch (e) {
+      console.warn('LocalStorage error', e);
+    }
+  }
+
+  loadSavedWishesFromLocalStorage() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('midAutumn_userWishes') || '[]');
+      saved.forEach((item, idx) => {
+        const angle = (idx / (saved.length + 1)) * Math.PI * 2 + 0.8;
+        const radius = 13.5 + (idx % 3) * 3.5;
+        const y = 8.5 + idx * 2.2;
+        const pos = new THREE.Vector3(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+
+        const customWish = {
+          id: 9,
+          symbol: '愿',
+          symbolMeaning: 'Nguyện',
+          title: 'Tâm Nguyện Của Bạn',
+          content: item.text
+        };
+        const { lantern, collider } = this.createGlowingWishLantern(customWish, 0.88);
+        lantern.position.copy(pos);
+        this.group.add(lantern);
+        this.interactiveLanterns.push(collider);
+
+        this.lanternList.push({
+          group: lantern,
+          flameGroup: lantern.userData.flameGroup,
+          glowSprite: lantern.userData.glowSprite,
+          radius,
+          angle,
+          baseY: y,
+          orbitSpeed: 0.04 * (idx % 2 === 0 ? 1 : -1) * 0.35,
+          bobSpeed: 0.9,
+          bobAmp: 0.25,
+          offset: idx
+        });
+      });
+    } catch (e) {
+      console.warn('LocalStorage error', e);
+    }
   }
 
   update(time) {
@@ -344,19 +399,23 @@ export class FloatingLanternsManager {
       }
     }
 
-    for (let i = this.skyLanterns.length - 1; i >= 0; i--) {
+    for (let i = 0; i < this.skyLanterns.length; i++) {
       const sl = this.skyLanterns[i];
-      sl.life++;
-      sl.group.position.y += sl.speedY;
+      if (sl.group.position.y < sl.targetY) {
+        sl.group.position.y += sl.speedY;
+        sl.speedY = Math.max(0.003, sl.speedY * 0.997);
+      } else {
+        sl.group.position.y = sl.targetY + Math.sin(time * 0.8 + sl.swayOffset) * 0.25;
+      }
+
       sl.group.position.x += sl.driftX;
       sl.group.position.z += sl.driftZ;
       sl.group.rotation.y += sl.rotSpeed;
+      sl.group.rotation.z = Math.sin(time * 1.5 + sl.swayOffset) * 0.04;
 
-      if (sl.group.position.y > 65 || sl.life > sl.maxLife) {
-        this.group.remove(sl.group);
-        const idx = this.interactiveLanterns.indexOf(sl.collider);
-        if (idx > -1) this.interactiveLanterns.splice(idx, 1);
-        this.skyLanterns.splice(i, 1);
+      if (sl.flameGroup) {
+        const flicker = 1 + Math.sin(time * 8 + sl.swayOffset) * 0.15;
+        sl.flameGroup.scale.set(flicker, flicker * 1.1, flicker);
       }
     }
   }

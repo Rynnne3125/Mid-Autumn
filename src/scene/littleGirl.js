@@ -116,6 +116,13 @@ export class LittleGirl {
     collider.userData = { isGirl: true };
     this.group.add(collider);
     this.interactiveObjects.push(collider);
+
+    // Collider cho lồng đèn trên tay cô bé
+    const lanternCollider = new THREE.Mesh(new THREE.SphereGeometry(0.8, 4, 4), new THREE.MeshBasicMaterial({ visible: false }));
+    lanternCollider.position.set(0.35, 1.55, 1.25);
+    lanternCollider.userData = { isGirl: true, isHandLantern: true };
+    this.group.add(lanternCollider);
+    this.interactiveObjects.push(lanternCollider);
   }
 
   createHandWishLantern() {
