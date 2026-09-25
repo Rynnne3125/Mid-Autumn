@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Đêm Hội Trăng Rằm 3D - Cây Hoa Anh Đào & Lồng Đèn Ước Nguyện</title>
+  <title>Đêm Hội Trăng Rằm 3D - Cây Hoa Anh Đào & Đèn Trời Ước Nguyện</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Charm:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -13,125 +13,39 @@
   <!-- Canvas 3D -->
   <canvas id="webgl-canvas"></canvas>
 
-  <!-- Màn hình tải (Loading Screen) -->
+  <!-- Màn hình tải nhanh (Loader) -->
   <div id="loader" class="loader-overlay">
-    <div class="sakura-loader">
-      <div class="lantern-light"></div>
+    <div class="lantern-loader-flame">
+      <div class="flame-core"></div>
     </div>
-    <p class="loader-text">Đang thắp sáng hoa anh đào & lồng đèn đêm rằm...</p>
-    <div class="progress-bar-container">
-      <div id="progress-bar" class="progress-bar"></div>
-    </div>
+    <p class="loader-text">Đang thắp sáng những ngọn đèn ước nguyện...</p>
   </div>
 
-  <!-- UI Lớp phủ (Festive UI Overlay) -->
-  <div id="ui-container" class="ui-container">
-    <!-- Top Header -->
-    <header class="top-bar">
-      <div class="brand-title">
-        <span class="icon">🌸</span>
-        <span class="title-text">Hội Trăng Anh Đào</span>
-      </div>
-      <div class="header-controls">
-        <button id="btn-audio" class="glass-btn" title="Bật/Tắt Nhạc Dân Gian">
-          <span id="audio-icon">🎵</span>
-          <span class="btn-text">Âm Nhạc</span>
-        </button>
-        <button id="btn-camera" class="glass-btn" title="Chuyển Góc Nhìn">
-          <span>🎥</span>
-          <span class="btn-text">Góc Nhìn</span>
-        </button>
-        <button id="btn-girl-lantern" class="glass-btn highlight" title="Thả đèn từ tay cô bé">
-          <span>🏮</span>
-          <span class="btn-text">Bé Thả Đèn</span>
-        </button>
-        <button id="btn-toggle-card" class="glass-btn" title="Ẩn/Hiện Thiệp Chúc">
-          <span>💌</span>
-          <span class="btn-text">Thiệp Chúc</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Thiệp chúc mừng Trung Thu chính giữa màn hình (mặc định gọn gàng) -->
-    <main id="greeting-card" class="greeting-card minimized">
-      <button id="btn-close-card" class="btn-close" title="Thu nhỏ thiệp">✕</button>
-      <div class="card-inner">
-        <div class="card-decoration top-decor">❖ 🌸 ❖</div>
-        <div class="greeting-badge">Rằm Tháng Tám Âm Lịch</div>
-        <h1 class="main-greeting">Chúc Mừng Tết Trung Thu</h1>
-        <div class="golden-divider"></div>
-        <p id="greeting-message" class="greeting-text">
-          Ánh trăng rằm sáng soi muôn nẻo, chúc bạn và gia đình một mùa Trung Thu ấm áp, vạn sự bình an và vẹn tròn hạnh phúc như sắc hồng hoa anh đào đêm nay!
-        </p>
-        <div class="recipient-box">
-          <span class="label">Thân gửi:</span>
-          <span id="display-recipient" class="recipient-name">Những người thương yêu</span>
-          <button id="btn-edit-wish" class="btn-text-action" title="Chỉnh sửa tên và lời chúc">✏️ Đổi lời chúc</button>
-        </div>
-      </div>
-    </main>
-
-    <!-- Modal Xem Lời Chúc Ý Nghĩa Khi Click Lồng Đèn -->
+  <!-- UI Tối Giản: Duy nhất 1 thanh ghi chú ở dưới cùng -->
+  <div class="ui-minimal-overlay">
+    <!-- Modal Xem Lời Chúc Khi Click Lồng Đèn -->
     <div id="modal-lantern-wish" class="modal-overlay hidden">
       <div class="modal-card wish-card-theme">
-        <button id="btn-close-lantern-wish" class="btn-close">✕</button>
-        <div class="wish-badge" id="wish-modal-category">🏮 Lời Chúc Ý Nghĩa</div>
+        <button id="btn-close-lantern-wish" class="btn-close" aria-label="Đóng">✕</button>
+        <div class="wish-badge" id="wish-modal-category">🏮 Đèn Ước Nguyện</div>
         <h2 id="wish-modal-title" class="wish-title">Đoàn Viên Sum Vầy</h2>
         <div class="golden-divider"></div>
         <p id="wish-modal-content" class="wish-poem-content">
           Nội dung lời chúc...
         </p>
         <div class="modal-actions-center">
-          <button id="btn-copy-lantern-wish" class="gold-gradient-btn">✨ Sao Chép Lời Chúc Này</button>
+          <button id="btn-copy-lantern-wish" class="gold-gradient-btn">✨ Sao Chép Lời Chúc</button>
         </div>
       </div>
     </div>
 
-    <!-- Modal Thả Đèn Kèm Ước Nguyện Của Bạn -->
-    <div id="modal-wish" class="modal-overlay hidden">
-      <div class="modal-card">
-        <button id="btn-close-modal" class="btn-close">✕</button>
-        <h3>🏮 Cô Bé Thả Đèn Ước Nguyện</h3>
-        <p class="modal-desc">Gửi ước nguyện của bạn vào chiếc lồng đèn trên tay cô bé để bay lên cung trăng:</p>
-        <textarea id="wish-input" maxlength="120" placeholder="Viết ước nguyện của bạn tại đây (ví dụ: Chúc gia đình luôn bình an, mạnh khỏe và sum vầy trọn vẹn)..."></textarea>
-        <div class="modal-actions">
-          <button id="btn-submit-wish" class="gold-gradient-btn">Thắp Sáng & Bay Lên 🚀</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Chỉnh Sửa Thiệp Chúc -->
-    <div id="modal-custom-wish" class="modal-overlay hidden">
-      <div class="modal-card">
-        <button id="btn-close-custom" class="btn-close">✕</button>
-        <h3>💌 Cá Nhân Hóa Thiệp Chúc</h3>
-        <div class="form-group">
-          <label for="input-recipient">Tên người nhận:</label>
-          <input type="text" id="input-recipient" maxlength="40" placeholder="Ví dụ: Ba Mẹ, Người Thương, Bạn Thân..." />
-        </div>
-        <div class="form-group">
-          <label for="input-message">Nội dung lời chúc:</label>
-          <textarea id="input-message" rows="3" maxlength="200" placeholder="Nhập lời chúc Trung Thu của bạn..."></textarea>
-        </div>
-        <div class="modal-actions">
-          <button id="btn-save-wish" class="gold-gradient-btn">Lưu & Tạo Link Chia Sẻ</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Thông báo nổi (Toast Notification) -->
+    <!-- Thông báo ngắn (Toast) -->
     <div id="toast" class="toast hidden"></div>
 
-    <!-- Bottom Bar / Tương tác gợi ý -->
+    <!-- Dòng ghi chú duy nhất dưới cùng màn hình theo đúng yêu cầu -->
     <footer class="bottom-bar">
-      <div class="interaction-hints">
-        <span>🏮 Click lồng đèn để mở lời chúc</span>
-        <span>•</span>
-        <span>👧 Chạm cô bé để thả đèn</span>
-        <span>•</span>
-        <span>🐰 Chạm Thỏ Ngọc</span>
-        <span>•</span>
-        <span>👆 Vuốt để xoay 360°</span>
+      <div class="bottom-hint-note">
+        <span class="icon">🏮</span> Chạm vào lồng đèn để xem lời chúc
       </div>
     </footer>
   </div>
